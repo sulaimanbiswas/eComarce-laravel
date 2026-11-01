@@ -8,9 +8,6 @@
     }
     .best-selling *, .best-selling *::before, .best-selling *::after { box-sizing: border-box; }
     .best-selling__container { max-width: 1536px; margin: 0 auto; padding: 0 clamp(20px, 3vw, 48px); }
-    .best-selling__heading { position: relative; margin: 0 0 30px; padding-bottom: 20px; color: #18473d; text-align: center; font-size: clamp(23px, 2vw, 28px); font-weight: 700; line-height: 1.3; }
-    .best-selling__heading::after { content: ''; position: absolute; width: 48px; height: 3px; left: calc(50% - 24px); bottom: 0; border-radius: 3px; background: var(--showcase-accent); }
-    .best-selling__heading a, .best-selling__heading a:hover { color: inherit; text-decoration: none; }
     .best-selling__layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); gap: 16px; align-items: stretch; }
     .best-selling__collection { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; min-width: 0; }
     .best-selling__cell { grid-column: span var(--showcase-card-span, 2); min-width: 0; }

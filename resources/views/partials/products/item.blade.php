@@ -19,7 +19,7 @@
         $addToCartIcon = ! empty(trim($show_option->add_to_cart_icon ?? '')) ? $show_option->add_to_cart_icon : '<i class="fas fa-shopping-cart"></i>';
         $addToCartText = ! empty(trim($show_option->add_to_cart_text ?? '')) ? $show_option->add_to_cart_text : 'Add To Cart';
         $orderNowIcon = ! empty(trim($show_option->order_now_icon ?? '')) ? $show_option->order_now_icon : '<i class="fas fa-shopping-cart"></i>';
-        $orderNowText = ! empty(trim($show_option->order_now_text ?? '')) ? $show_option->order_now_text : 'Add To Cart';
+        $orderNowText = ! empty(trim($show_option->order_now_text ?? '')) ? $show_option->order_now_text : 'Buy Now';
     @endphp
 
     <div class="product-card" data-id="{{ $product->id }}" data-max="-1">
@@ -78,7 +78,7 @@
             </div>
             @if (! $isOninda)
                 <div class="product-card__buttons">
-                    @if ($buttonType == 'add_to_cart')
+                    @if (in_array($buttonType, ['add_to_cart', 'both'], true))
                         @if ($hasVariations)
                             <a href="{{ $productUrl }}" wire:navigate.hover class="btn product-card__addtocart" style="text-decoration: none;">
                                 {!! $addToCartIcon !!}
@@ -91,7 +91,8 @@
                                 <span>{{ $addToCartText }}</span>
                             </button>
                         @endif
-                    @elseif ($buttonType == 'order_now')
+                    @endif
+                    @if (in_array($buttonType, ['order_now', 'both'], true))
                         @if ($hasVariations)
                             <a href="{{ $productUrl }}" wire:navigate.hover class="btn product-card__ordernow" style="text-decoration: none;">
                                 {!! $orderNowIcon !!}
@@ -230,7 +231,7 @@
             </div>
             @if (! $isOninda)
                 <div class="product-card__buttons">
-                    @if ($buttonType == 'add_to_cart')
+                    @if (in_array($buttonType, ['add_to_cart', 'both'], true))
                         @if ($hasVariations)
                             <a href="{{ $productUrl }}" wire:navigate.hover class="btn btn-primary product-card__addtocart" style="text-decoration: none;">
                                 {!! $show_option->add_to_cart_icon ?? null !!}
@@ -243,7 +244,8 @@
                                 <span class="ml-1">{{ $show_option->add_to_cart_text ?? 'Add to Cart' }}</span>
                             </button>
                         @endif
-                    @elseif ($buttonType == 'order_now')
+                    @endif
+                    @if (in_array($buttonType, ['order_now', 'both'], true))
                         @if ($hasVariations)
                             <a href="{{ $productUrl }}" wire:navigate.hover class="btn btn-primary product-card__ordernow order-now-drift" style="text-decoration: none;">
                                 {!! $show_option->order_now_icon ?? null !!}

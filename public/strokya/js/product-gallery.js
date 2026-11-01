@@ -136,7 +136,7 @@
                         ? ((showOption.order_now_icon || '').trim() || '<i class="fas fa-shopping-cart"></i>')
                         : (showOption.order_now_icon || '');
                     const orderNowText = isGbaz
-                        ? ((showOption.order_now_text || '').trim() || 'Add To Cart')
+                            ? ((showOption.order_now_text || '').trim() || 'Buy Now')
                         : (showOption.order_now_text || 'Order Now');
 
                     let buttonsHTML = '';
@@ -146,7 +146,7 @@
                         const btnPrimaryClass = isGbaz ? 'btn' : 'btn btn-primary';
                         const spanClass = isGbaz ? '' : ' class="ml-1"';
 
-                        if ((showOption.product_grid_button || 'add_to_cart') === 'add_to_cart') {
+                        if (['add_to_cart', 'both'].includes(showOption.product_grid_button || 'add_to_cart')) {
                             buttonsHTML = `
                                 <div class="product-card__buttons">
                                     <button class="${btnPrimaryClass} product-card__addtocart" type="button" ${disabledAttr}
@@ -156,8 +156,9 @@
                                     </button>
                                 </div>
                             `;
-                        } else if (showOption.product_grid_button === 'order_now') {
-                            buttonsHTML = `
+                        }
+                        if (['order_now', 'both'].includes(showOption.product_grid_button)) {
+                            buttonsHTML += `
                                 <div class="product-card__buttons">
                                     <button class="${btnPrimaryClass} product-card__ordernow" type="button" ${disabledAttr}
                                             data-product-id="${productId}" data-action="kart" onclick="handleAddToCart(this)">

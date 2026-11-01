@@ -44,30 +44,7 @@
                                 <x-error field="title" />
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <x-label for="type" />
-                                <select selector name="type" id="type" class="form-control">
-                                    <option value="pure-grid" {{ old('type') == 'pure-grid' ? 'selected' : '' }}>Pure Grid</option>
-                                    <option value="carousel-grid" {{ old('type') == 'carousel-grid' ? 'selected' : '' }}>Carousel Grid</option>
-                                </select>
-                                <x-error field="type" />
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <x-label for="rows" />
-                                <x-input type="number" name="data[rows]" />
-                                <x-error field="data.rows" />
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <x-label for="cols" /><span>(4 or 5)</span>
-                                <x-input type="number" name="data[cols]" />
-                                <x-error field="data.cols" />
-                            </div>
-                        </div>
+                        <input type="hidden" name="type" value="pure-grid">
                         <div class="col-md-6">
                             <div class="pl-4 d-flex h-100 align-items-center">
                                 <div class="radio radio-secondary mr-md-3">

@@ -46,8 +46,12 @@
             </div>
         </div>
         <div class="col-md-6 d-flex flex-column justify-content-center">
-            <label for="" class="my-1">Product Grid Button</label>
-            <div class="ml-2 d-flex">
+            <label for="" class="my-1">Product Card Buttons — applies to all sections and catalog cards</label>
+            <div class="ml-2 d-flex flex-wrap" style="gap: 10px;">
+                <div class="radio radio-secondary">
+                    <input type="radio" id="product-grid-both" name="show_option[product_grid_button]" value="both" @checked(old('show_option.product_grid_button', $show_option->product_grid_button ?? 'add_to_cart') === 'both')>
+                    <label for="product-grid-both">Add To Cart + Buy Now</label>
+                </div>
                 <div class="mr-3 radio radio-secondary">
                     <input type="radio" id="product-grid-add-to-cart" name="show_option[product_grid_button]"
                         value="add_to_cart" @if (old('show_option.product_grid_button', $show_option->product_grid_button ?? 'add_to_cart') == 'add_to_cart') checked @endif />
@@ -56,7 +60,7 @@
                 <div class="ml-3 radio radio-secondary">
                     <input type="radio" id="product-grid-order-now" name="show_option[product_grid_button]"
                         value="order_now" @if (old('show_option.product_grid_button', $show_option->product_grid_button ?? false) == 'order_now') checked @endif />
-                    <label for="product-grid-order-now">`Order Now`</label>
+                    <label for="product-grid-order-now">`Buy Now`</label>
                 </div>
                 <div class="ml-3 radio radio-secondary">
                     <input type="radio" id="product-grid-none" name="show_option[product_grid_button]"
@@ -247,4 +251,5 @@
         </div>
     </div>
     @include('admin.settings.trust-services')
+    @include('admin.settings.section-heading')
 </div>

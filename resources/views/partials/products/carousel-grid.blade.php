@@ -1,14 +1,7 @@
 <div class="block block-products-carousel" data-layout="grid-{{ $cols ?? 5 }}">
     <div class="container">
-        <div class="block-header">
-            <h1 class="block-header__title" style="padding: 0.375rem 1rem;">
-                @isset($section)
-                    <a href="{{ route('home-sections.products', $section) }}">{{ $title }}</a>
-                @else
-                    {{ $title }}
-                @endisset
-            </h1>
-            <div class="block-header__divider"></div>
+        @include('partials.section-heading', ['headingSection' => $section ?? null, 'headingTitle' => $title, 'headingId' => 'carousel-heading-'.($section->id ?? 'products'), 'headingUrl' => isset($section) ? route('home-sections.products', $section) : route('products.index'), 'headingPosition' => 'top'])
+        <div class="d-flex justify-content-end mb-3">
             <div class="block-header__arrows-list">
                 <button class="block-header__arrow block-header__arrow--left" type="button" aria-label="Previous">
                     <svg width="7px" height="11px" viewBox="0 0 7 11"><path d="M6.7.3c-.4-.4-.9-.4-1.3 0L0 5.5l5.4 5.2c.4.4.9.3 1.3 0 .4-.4.4-1 0-1.3l-4-3.9 4-3.9c.4-.4.4-1 0-1.3z"/></svg>
@@ -32,5 +25,6 @@
                 @endforeach
             </div>
         </div>
+        @include('partials.section-heading', ['headingSection' => $section ?? null, 'headingTitle' => $title, 'headingId' => 'carousel-heading-'.($section->id ?? 'products'), 'headingUrl' => isset($section) ? route('home-sections.products', $section) : route('products.index'), 'headingPosition' => 'bottom'])
     </div>
 </div>

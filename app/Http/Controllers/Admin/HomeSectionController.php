@@ -7,12 +7,15 @@ use App\Http\Requests\HomeSectionRequest;
 use App\Models\Category;
 use App\Models\HomeSection;
 use App\Models\Page;
+use App\Traits\ImageUploader;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class HomeSectionController extends Controller
 {
+    use ImageUploader;
+
     /**
      * Display a listing of the resource.
      *
@@ -70,7 +73,12 @@ class HomeSectionController extends Controller
         abort_if(request()->user()->is('salesman'), 403, 'You don\'t have permission.');
 
         $data = $request->validated();
+        $data = $this->prepareBannerImages($request, $data);
         $categories = Arr::pull($data, 'categories');
+
+        if (($data['type'] ?? null) === 'banner') {
+            $data['order'] = ((int) HomeSection::query()->max('order')) + 1;
+        }
 
         // Extract SEO data before creating
         $seoData = $request->input('seo', []);
@@ -131,6 +139,7 @@ class HomeSectionController extends Controller
     {
         abort_if(request()->user()->is('salesman'), 403, 'You don\'t have permission.');
         $data = $request->validated();
+        $data = $this->prepareBannerImages($request, $data);
         $categories = Arr::pull($data, 'categories');
 
         // Extract SEO data before updating
@@ -151,6 +160,25 @@ class HomeSectionController extends Controller
         // Cache is cleared automatically by model events
 
         return to_route('admin.home-sections.index')->with('success', 'Section Has Been Updated.');
+    }
+
+    private function prepareBannerImages(HomeSectionRequest $request, array $data): array
+    {
+        if (($data['type'] ?? null) !== 'banner') {
+            return $data;
+        }
+
+        foreach (array_keys($data['data']['columns']['width'] ?? []) as $index) {
+            foreach (['desktop' => 'image', 'mobile' => 'mobile_image'] as $kind => $key) {
+                if ($file = $request->file('data.columns.'.$kind.'_upload.'.$index)) {
+                    $data['data']['columns'][$key][$index] = $this->uploadImage($file, ['dir' => 'banners/'.$kind, 'resize' => false]);
+                }
+            }
+        }
+
+        unset($data['data']['columns']['desktop_upload'], $data['data']['columns']['mobile_upload']);
+
+        return $data;
     }
 
     /**

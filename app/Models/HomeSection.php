@@ -57,6 +57,17 @@ class HomeSection extends Model
         return $this->belongsToMany(Category::class);
     }
 
+    public function storefrontLayout(): string
+    {
+        $layout = $this->data->layout ?? null;
+
+        if (is_string($layout) && array_key_exists($layout, config('storefront.product_layouts'))) {
+            return $layout;
+        }
+
+        return $this->type === 'carousel-grid' ? 'slider' : 'grid';
+    }
+
     public function products($paginate = 0, $category = null)
     {
         if ($paginate || $category) {
@@ -169,7 +180,9 @@ class HomeSection extends Model
                 }
             }
 
-            $query->take($rows * $cols);
+            $query->take(($this->data->layout ?? 'standard') !== 'standard'
+                ? min(48, max(1, (int) ($this->data->showcase_limit ?? 6)))
+                : $rows * $cols);
 
             if ($ids) {
                 $caseOrder = 'CASE products.id '.implode(' ', array_map(fn ($id, $i) => "WHEN {$id} THEN {$i}", $ids, range(1, count($ids)))).' ELSE 999999 END';

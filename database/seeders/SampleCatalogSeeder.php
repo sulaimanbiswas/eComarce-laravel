@@ -90,7 +90,7 @@ class SampleCatalogSeeder extends Seeder
         }
         $section ??= HomeSection::query()->firstOrCreate(['title' => 'Workshop Essentials'], [
             'type' => 'pure-grid', 'items' => $productIds, 'order' => 1,
-            'data' => ['rows' => 1, 'cols' => 4, 'source' => 'specific'],
+            'data' => ['rows' => 1, 'cols' => 4, 'source' => 'specific', 'layout' => 'grid', 'showcase_columns' => 4, 'showcase_limit' => 4],
         ]);
         if ($section->wasRecentlyCreated) {
             $section->seo()->firstOrCreate([]);

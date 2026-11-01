@@ -9,10 +9,9 @@
     $hasCardVariations = ($product->variations_count ?? 0) > 1;
     $cardDiscount = $product->price > $product->selling_price && $product->selling_price > 0;
     $cardDiscountPercent = $cardDiscount ? (int) round(($product->price - $product->selling_price) / $product->price * 100) : 0;
-    $cardActionMode = $section->data->showcase_actions ?? 'both';
     $cardButtonType = $cardOptions->product_grid_button ?? 'add_to_cart';
-    $showCartAction = $cardActionMode === 'both' || $cardButtonType === 'add_to_cart';
-    $showBuyAction = $cardActionMode === 'both' || $cardButtonType === 'order_now';
+    $showCartAction = in_array($cardButtonType, ['both', 'add_to_cart'], true);
+    $showBuyAction = in_array($cardButtonType, ['both', 'order_now'], true);
 @endphp
 <article class="showcase-card" data-id="{{ $product->id }}" data-max="{{ $product->should_track ? $product->stock_count : -1 }}">
     @if ($cardDiscountPercent > 0)

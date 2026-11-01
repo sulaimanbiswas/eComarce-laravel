@@ -1,6 +1,26 @@
 <?php
 
 return [
+    'heading_variants' => [
+        'split' => 'Title left / View All right',
+        'centered' => 'Centered title / View All right',
+        'stacked' => 'Centered title / link below title',
+        'ruled' => 'Title and link with a divider',
+        'bottom' => 'Centered title / View All below products',
+    ],
+    'heading_defaults' => [
+        'variant' => 'split', 'title_color' => '#18473d', 'link_color' => '#245347',
+        'link_hover' => '#b07d25', 'accent_color' => '#c89536',
+        'link_background' => '#ffffff', 'link_border' => '#dce5dc', 'link_text' => 'View All',
+    ],
+    'product_layouts' => [
+        'showcase' => ['name' => 'Featured Mix', 'description' => 'One featured card with mixed cards', 'preview' => 'featured'],
+        'grid' => ['name' => 'Category Grid', 'description' => 'Equal cards with a side heading', 'preview' => 'grid'],
+        'horizontal' => ['name' => 'Horizontal Cards', 'description' => 'Image beside name, price and buttons', 'preview' => 'horizontal'],
+        'slider' => ['name' => 'Product Slider', 'description' => 'Swipeable cards without looping', 'preview' => 'slider'],
+        'compact' => ['name' => 'Just For You', 'description' => 'Clean catalog grid with compact spacing', 'preview' => 'compact'],
+        'all-products' => ['name' => 'All Products', 'description' => 'Bottom section with filters and Load More', 'preview' => 'all-products'],
+    ],
     'trust_icons' => [
         'flask' => 'Lab / Quality Test',
         'truck' => 'Delivery Truck',

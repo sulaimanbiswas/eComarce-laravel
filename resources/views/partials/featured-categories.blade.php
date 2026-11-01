@@ -4,7 +4,7 @@
     @endpush
     <section class="featured-categories" aria-labelledby="featured-categories-title" data-category-slider>
         <div class="storefront-hero__container">
-            <h2 id="featured-categories-title">Featured Categories</h2>
+            @include('partials.section-heading', ['headingSection' => null, 'headingTitle' => 'Featured Categories', 'headingId' => 'featured-categories-title', 'headingUrl' => route('categories'), 'headingPosition' => 'top'])
             <div class="featured-categories__slider">
                 <button class="featured-categories__arrow featured-categories__arrow--previous" type="button" aria-label="Previous categories" aria-controls="featured-categories-list" data-category-previous hidden disabled>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
@@ -27,6 +27,7 @@
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
                 </button>
             </div>
+            @include('partials.section-heading', ['headingSection' => null, 'headingTitle' => 'Featured Categories', 'headingId' => 'featured-categories-title', 'headingUrl' => route('categories'), 'headingPosition' => 'bottom'])
         </div>
     </section>
 @endif

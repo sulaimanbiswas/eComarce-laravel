@@ -1,7 +1,7 @@
 @php
     $show_option = setting('show_option');
     $productGridButton = $show_option->product_grid_button ?? 'add_to_cart';
-    $productGridButton = in_array($productGridButton, ['add_to_cart', 'order_now', 'none'], true) ? $productGridButton : 'add_to_cart';
+    $productGridButton = in_array($productGridButton, ['add_to_cart', 'order_now', 'both', 'none'], true) ? $productGridButton : 'add_to_cart';
     $addToCartIcon = ! empty(trim($show_option->add_to_cart_icon ?? '')) ? $show_option->add_to_cart_icon : '<i class="fas fa-shopping-cart"></i>';
     $addToCartText = ! empty(trim($show_option->add_to_cart_text ?? '')) ? $show_option->add_to_cart_text : 'Add To Cart';
     $orderNowIcon = ! empty(trim($show_option->order_now_icon ?? '')) ? $show_option->order_now_icon : '<i class="fas fa-shopping-cart"></i>';
@@ -81,7 +81,7 @@
                         $available = true;
                         $has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1;
                     @endphp
-                    @if ($productGridButton == 'add_to_cart')
+                    @if (in_array($productGridButton, ['add_to_cart', 'both'], true))
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn product-card__addtocart" style="text-decoration: none;">
                                 {!! $addToCartIcon !!}
@@ -94,7 +94,8 @@
                                 <span>{{ $addToCartText }}</span>
                             </button>
                         @endif
-                    @elseif ($productGridButton == 'order_now')
+                    @endif
+                    @if (in_array($productGridButton, ['order_now', 'both'], true))
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn product-card__ordernow" style="text-decoration: none;">
                                 {!! $orderNowIcon !!}
@@ -244,7 +245,7 @@
                         $available = true;
                         $has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1;
                     @endphp
-                    @if ($productGridButton == 'add_to_cart')
+                    @if (in_array($productGridButton, ['add_to_cart', 'both'], true))
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn btn-primary product-card__addtocart" style="text-decoration: none;">
                                 {!! $addToCartIcon !!}
@@ -258,7 +259,7 @@
                             </button>
                         @endif
                     @endif
-                    @if ($productGridButton == 'order_now')
+                    @if (in_array($productGridButton, ['order_now', 'both'], true))
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn btn-primary product-card__ordernow" style="text-decoration: none;">
                                 {!! $orderNowIcon !!}

@@ -64,17 +64,7 @@
         <div class="block block-products-carousel">
             <div class="container">
                 @if ($section->title ?? null)
-                    <div class="block-header">
-                        <h1 class="block-header__title" style="padding: 0.375rem 1rem;">
-                            <a href="{{ route('home-sections.products', $section) }}"
-                                wire:navigate.hover>{{ $section->title }}</a>
-                        </h1>
-                        <div class="block-header__divider"></div>
-                        <a href="{{ route('products.index', ['filter_section' => $section->id]) }}"
-                            class="ml-3 btn btn-sm btn-all" wire:navigate.hover>
-                            View All
-                        </a>
-                    </div>
+                    @include('partials.section-heading', ['headingSection' => $section, 'headingTitle' => $section->title, 'headingId' => 'infinite-heading-'.$section->id, 'headingUrl' => route('home-sections.products', $section), 'headingPosition' => 'top'])
                 @endif
                 <div class="products-view__list products-list"
                     data-layout="grid-{{ optional($section->data)->cols ?? 5 }}-full" data-with-features="false">
@@ -101,6 +91,7 @@
                         @endif
                     </div>
                 </div>
+                @include('partials.section-heading', ['headingSection' => $section, 'headingTitle' => $section->title, 'headingId' => 'infinite-heading-'.$section->id, 'headingUrl' => route('home-sections.products', $section), 'headingPosition' => 'bottom'])
             </div>
         </div>
     @endif
@@ -265,7 +256,7 @@
                         ? ((this.showOption.order_now_icon || '').trim() || '<i class="fas fa-shopping-cart"></i>')
                         : (this.showOption.order_now_icon || '');
                     const orderNowText = isGbaz
-                        ? ((this.showOption.order_now_text || '').trim() || 'Add To Cart')
+                        ? ((this.showOption.order_now_text || '').trim() || 'Buy Now')
                         : (this.showOption.order_now_text || 'Order Now');
 
                     let buttonsHTML = '';
@@ -275,7 +266,7 @@
                         const spanClass = isGbaz ? '' : ' class="ml-1"';
                         const orderDriftClass = isGbaz ? 'product-card__ordernow' : 'product-card__ordernow order-now-drift';
 
-                        if (buttonType === 'add_to_cart') {
+                        if (['add_to_cart', 'both'].includes(buttonType)) {
                             if (hasVariations) {
                                 buttonsHTML = `
                                     <div class="product-card__buttons">
@@ -296,9 +287,10 @@
                                     </div>
                                 `;
                             }
-                        } else if (buttonType === 'order_now') {
+                        }
+                        if (['order_now', 'both'].includes(buttonType)) {
                             if (hasVariations) {
-                                buttonsHTML = `
+                                buttonsHTML += `
                                     <div class="product-card__buttons">
                                         <a class="${btnPrimaryClass} ${orderDriftClass}" href="${productUrl}" wire:navigate.hover style="text-decoration: none;">
                                             ${orderNowIcon}
@@ -307,7 +299,7 @@
                                     </div>
                                 `;
                             } else {
-                                buttonsHTML = `
+                                buttonsHTML += `
                                     <div class="product-card__buttons">
                                         <button class="${btnPrimaryClass} ${orderDriftClass}" type="button"
                                                 data-product-id="${productId}" data-action="kart" onclick="handleAddToCart(this)">

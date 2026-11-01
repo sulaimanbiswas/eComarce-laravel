@@ -1,21 +1,7 @@
 <div class="block block-products-carousel">
     <div class="container">
         @if($title ?? null)
-            <div class="block-header">
-                <h1 class="block-header__title" style="padding: 0.375rem 1rem;">
-                    @isset($section)
-                        <a href="{{ route('home-sections.products', $section) }}">{{ $title }}</a>
-                    @else
-                        {{ $title }}
-                    @endisset
-                </h1>
-                <div class="block-header__divider"></div>
-                @isset($section)
-                    <a href="{{ route('products.index', ['filter_section' => $section->id]) }}" class="ml-3 btn btn-sm btn-all">
-                        View All
-                    </a>
-                @endisset
-            </div>
+            @include('partials.section-heading', ['headingSection' => $section ?? null, 'headingTitle' => $title, 'headingId' => 'grid-heading-'.($section->id ?? 'products'), 'headingUrl' => isset($section) ? route('home-sections.products', $section) : route('products.index'), 'headingPosition' => 'top'])
         @endif
         <div class="products-view__list products-list" data-layout="grid-{{ $cols ?? 5 }}-full" data-with-features="false">
             <div class="products-list__body">
@@ -26,5 +12,8 @@
                 @endforeach
             </div>
         </div>
+        @if ($title ?? null)
+            @include('partials.section-heading', ['headingSection' => $section ?? null, 'headingTitle' => $title, 'headingId' => 'grid-heading-'.($section->id ?? 'products'), 'headingUrl' => isset($section) ? route('home-sections.products', $section) : route('products.index'), 'headingPosition' => 'bottom'])
+        @endif
     </div>
 </div>

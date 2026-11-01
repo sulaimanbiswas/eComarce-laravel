@@ -135,11 +135,8 @@
 @if(($show_option = setting('show_option'))->brand_carousel ?? false)
 <div class="block block-products-carousel" data-layout="grid-cat">
     <div class="container">
-        <div class="block-header">
-            <h3 class="block-header__title" style="padding: 0.375rem 1rem;">
-                <a href="{{ route('brands') }}" wire:navigate.hover>Brands</a>
-            </h3>
-            <div class="block-header__divider"></div>
+        @include('partials.section-heading', ['headingSection' => null, 'headingTitle' => 'Brands', 'headingId' => 'featured-brands-title', 'headingUrl' => route('brands'), 'headingPosition' => 'top'])
+        <div class="d-flex justify-content-end mb-3">
             <div class="block-header__arrows-list">
                 <button class="block-header__arrow block-header__arrow--left" type="button" aria-label="Previous">
                     <svg width="7px" height="11px" viewBox="0 0 7 11"><path d="M6.7.3c-.4-.4-.9-.4-1.3 0L0 5.5l5.4 5.2c.4.4.9.3 1.3 0 .4-.4.4-1 0-1.3l-4-3.9 4-3.9c.4-.4.4-1 0-1.3z"/></svg>
@@ -180,67 +177,15 @@
 </div>
 @endif
 
-@php $firstProductSection = true; @endphp
+@if ($show_option->brand_carousel ?? false)
+    <div class="container">@include('partials.section-heading', ['headingSection' => null, 'headingTitle' => 'Brands', 'headingId' => 'featured-brands-title', 'headingUrl' => route('brands'), 'headingPosition' => 'bottom'])</div>
+@endif
 @foreach(sections() as $section)
-@php
-    $isProductSection = in_array($section->type, ['pure-grid', 'carousel-grid']);
-    $useShowcase = $isProductSection && (($section->data->layout ?? ($firstProductSection ? 'showcase' : 'standard')) === 'showcase');
-    if ($isProductSection) {
-        $firstProductSection = false;
-    }
-@endphp
-@if($useShowcase)
+@if (($section->data->layout ?? '') === 'all-products' || !($section->data->section_enabled ?? true)) @continue @endif
+@if(in_array($section->type, ['pure-grid', 'carousel-grid']))
     @include('partials.products.best-selling', ['section' => $section, 'products' => $section->products()])
-@elseif($section->type == 'pure-grid')
-    <!-- .block-products-carousel -->
-    @if(config('app.infinite_scroll_section', false))
-    <x-infinite-scroll-section :section="$section" />
-    @else
-    @include('partials.products.pure-grid', [
-        'title' => $section->title,
-        'products' => $section->products(),
-        'cols' => optional($section->data)->cols ?? 5,
-        'section' => $section,
-    ])
-    @endif
-@elseif($section->type == 'carousel-grid')
-    <!-- .block-products-carousel -->
-    @include('partials.products.carousel-grid', [
-        'title' => $section->title,
-        'products' => $section->products(),
-        'rows' => optional($section->data)->rows,
-        'cols' => optional($section->data)->cols,
-    ])
 @elseif($section->type == 'banner')
-    @php
-        $pseudoColumns = (array) ($section->data->columns ?? []);
-    @endphp
-    @if(! empty($pseudoColumns['width']) && is_array($pseudoColumns['width']))
-    <div class="block block-banner">
-        <div class="container-fluid">
-            <div class="row">
-                @foreach($pseudoColumns['width'] as $i => $width)
-                <div class="col-md-{{ $width }} mb-3">
-                    @php
-                        $link = $pseudoColumns['link'][$i] ?? null;
-                        $link = $link && $link != '#' ? $link : null;
-                        $link = $link ? url($link) : null;
-                        $categories = implode(',', ((array) ($pseudoColumns['categories'] ?? []))[$i] ?? []);
-                    @endphp
-                    <a href="{{ $link ?? route('products.index', $categories ? ['filter_category' => $categories] : []) }}" {{ ! $link ? 'wire:navigate.hover' : '' }}>
-                        <img
-                            data-aos="{{ $pseudoColumns['animation'][$i] ?? '' }}"
-                            class="border img-fluid w-100"
-                            src="{{ cdn($pseudoColumns['image'][$i] ?? '') }}"
-                            alt="Image"
-                        >
-                    </a>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-    @endif
+    @include('partials.promotion-banners', ['section' => $section])
 @elseif($section->type == 'content')
     @php
         $pageId = $section->data->page_id ?? null;
@@ -268,6 +213,10 @@
     @endif
 @endif
 <!-- .block-products-carousel / end -->
+@endforeach
+
+@foreach (sections()->filter(fn ($catalogSection) => ($catalogSection->data->layout ?? '') === 'all-products' && ($catalogSection->data->section_enabled ?? true)) as $catalogSection)
+    <livewire:home-product-catalog :section-id="$catalogSection->id" :key="'home-catalog-'.$catalogSection->id" />
 @endforeach
 
 @endsection

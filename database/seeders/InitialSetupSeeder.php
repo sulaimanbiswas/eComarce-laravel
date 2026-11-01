@@ -35,6 +35,8 @@ class InitialSetupSeeder extends Seeder
                 InitialSettingsSeeder::class,
                 LocalAccountsSeeder::class,
                 SampleCatalogSeeder::class,
+                ExpandedCatalogSeeder::class,
+                StorefrontLayoutsSeeder::class,
                 InitialNavigationSeeder::class,
             ]);
 
