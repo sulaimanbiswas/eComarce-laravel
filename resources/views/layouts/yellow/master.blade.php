@@ -872,6 +872,7 @@
     </noscript>
     {!! $scripts ?? null !!}
     @stack('head')
+    @include('partials.header.styles')
 </head>
 
 <body class="header-fixed" style="margin: 0; padding: 0;">
@@ -948,12 +949,7 @@
     </div><!-- mobilemenu / end -->
     <!-- site -->
     <div class="site">
-        <!-- mobile site__header -->
-        @include('partials.header.mobile')
-        <!-- mobile site__header / end -->
-        <!-- desktop site__header -->
         @include('partials.header.desktop')
-        <!-- desktop site__header / end -->
         <!-- site__body -->
         <div class="site__body">
             <div class="container">

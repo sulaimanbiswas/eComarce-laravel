@@ -1,199 +1,82 @@
 @php
-    // Get first slide for LCP optimization
-    $firstSlide = slides()->first();
-    $lcpImageUrl = $firstSlide ? cdn(asset($firstSlide->desktop_src), 840, 395) : null;
+    $heroSlides = slides();
+    $heroCategory = categories()->first();
+    $showHeroBanner = $company->hero_banner_enabled ?? true;
+    $heroBannerLink = $company->hero_banner_link ?? null;
+    $heroBannerLink = filled($heroBannerLink) ? $heroBannerLink : ($heroCategory ? route('categories.products', $heroCategory->slug) : route('products.index'));
 @endphp
 
 @push('head')
-    @if($lcpImageUrl)
-        {{-- Preload LCP image for faster discovery and loading --}}
-        <link rel="preload" as="image" href="{{ $lcpImageUrl }}" fetchpriority="high">
+    @if ($firstHeroSlide = $heroSlides->first())
+        <link rel="preload" as="image" href="{{ asset($firstHeroSlide->desktop_src) }}" media="(min-width: 768px)" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ asset($firstHeroSlide->mobile_src ?: $firstHeroSlide->desktop_src) }}" media="(max-width: 767px)" fetchpriority="high">
     @endif
-@endpush
-
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var slideshowContainer = document.querySelector('.block-slideshow .owl-carousel');
-        if (slideshowContainer) {
-            var observer = new MutationObserver(function () {
-                slideshowContainer.querySelectorAll('.owl-prev[role="presentation"], .owl-next[role="presentation"]').forEach(function (el) {
-                    el.removeAttribute('role');
-                });
-                var prev = slideshowContainer.querySelector('.owl-prev');
-                var next = slideshowContainer.querySelector('.owl-next');
-                if (prev && !prev.getAttribute('aria-label')) {
-                    prev.setAttribute('aria-label', 'Previous slide');
-                }
-                if (next && !next.getAttribute('aria-label')) {
-                    next.setAttribute('aria-label', 'Next slide');
-                }
-                slideshowContainer.querySelectorAll('.owl-dot').forEach(function (dot, index) {
-                    if (!dot.getAttribute('aria-label')) {
-                        dot.setAttribute('aria-label', 'Go to slide ' + (index + 1));
-                    }
-                });
-            });
-            observer.observe(slideshowContainer, {childList: true, subtree: true});
-        }
-    });
-</script>
 @endpush
 
 @push('styles')
-<style>
-    @if(!(setting('show_option')->category_dropdown ?? false))
-    .block-slideshow--layout--with-departments .block-slideshow__body {
-        margin-left: 0;
-    }
-    @endif
-
-    .block-slideshow__slide-image--mobile {
-        display: none;
-    }
-
-    @media (max-width: 1023px) {
-        .block-slideshow__slide-image--desktop {
-            display: none;
-        }
-
-        .block-slideshow__slide-image--mobile {
-            display: block;
-        }
-    }
-
-    .block-slideshow__body .owl-carousel .owl-nav {
-        /* position: absolute; */
-        height: 100%;
-        display: flex;
-        width: 100%;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 40px;
-        top: 0;
-    }
-    .block-slideshow__body .owl-carousel .owl-nav button {
-        position: absolute;
-        top: 35%;
-        height: 60px;
-        color: white;
-        background: rgba(0, 0, 0, 0.1);
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-    }
-    .owl-prev {
-        left: 0;
-    }
-    .owl-next {
-        right: 0;
-    }
-    .block-slideshow__body .owl-carousel .owl-nav button:focus {
-        outline: none;
-    }
-    @media (max-width: 749px) {
-        .block-slideshow {
-            margin-bottom: 40px;
-        }
-        #slideshow-container {
-            padding-left: 5px;
-            padding-right: 5px;
-        }
-        #slideshow-container > div {
-            margin-left: -5px;
-            margin-right: -5px;
-        }
-        #slideshow-container > div > div {
-            padding-left: 5px;
-            padding-right: 5px;
-        }
-        .block-slideshow__body {
-            margin-top: 5px !important;
-        }
-    }
-    /* Ensure img-based slides maintain proper dimensions */
-    .block-slideshow__slide-image img {
-        display: block;
-    }
-    .block-slideshow__slide-image--desktop img,
-    .block-slideshow__slide-image--mobile img {
-        min-width: 100%;
-        min-height: 100%;
-    }
-    @media (max-width: 1023px) {
-        .block-slideshow__body, .block-slideshow__slide {
-            height: 180px !important;
-        }
-        .block-slideshow__slide-image--mobile {
-            background-size: cover;
-        }
-        .footer-contacts,
-        .footer-links,
-        .footer-newsletter {
-            text-align: left;
-        }
-        .footer-links ul {
-            padding-left: 27px;
-        }
-    }
-    .block-slideshow .owl-carousel .owl-dot {
-        width: 24px !important;
-    }
-</style>
+    @include('partials.hero-styles')
 @endpush
-<div class="block block-slideshow block-slideshow--layout--with-departments">
-    <div id="slideshow-container" class="container">
-        <div class="row">
-            <div class="col-12 @if(setting('show_option')->category_dropdown ?? false) col-lg-9 offset-lg-3 @endif">
-                <div class="block-slideshow__body">
+
+<section class="storefront-hero" aria-label="Featured promotions">
+    <div class="storefront-hero__container">
+        <div class="storefront-hero__grid {{ $showHeroBanner ? '' : 'storefront-hero__grid--single' }}">
+            <div class="storefront-hero__slider block-slideshow" aria-roledescription="carousel" aria-label="Store promotions">
+                @if ($heroSlides->isNotEmpty())
                     <div class="owl-carousel">
-                        @foreach(slides() as $index => $slide)
-                        @php
-                            $desktopImageUrl = cdn(asset($slide->desktop_src), 840, 395);
-                            $mobileImageUrl = cdn(asset($slide->mobile_src), 360, 180);
-                            $isFirstSlide = $index === 0;
-                            $objectFit = $slide->object_fit ?? 'cover';
-                        @endphp
-                        <a class="block-slideshow__slide" href="{{ $slide->btn_href ?? '#' }}">
-                            {{-- Use <img> tag for first slide to enable fetchpriority="high" for LCP optimization --}}
-                            @if($isFirstSlide)
-                                <div class="block-slideshow__slide-image block-slideshow__slide-image--desktop" style="position: relative; overflow: hidden;">
-                                    <img src="{{ $desktopImageUrl }}" alt="{{ $slide->title ?? 'Slide' }}"
-                                         fetchpriority="high"
-                                         loading="eager"
-                                         style="width: 100%; height: 100%; object-fit: {{ $objectFit }}; position: absolute; top: 0; left: 0;">
-                                </div>
-                                <div class="block-slideshow__slide-image block-slideshow__slide-image--mobile" style="position: relative; overflow: hidden;">
-                                    <img src="{{ $mobileImageUrl }}" alt="{{ $slide->title ?? 'Slide' }}"
-                                         fetchpriority="high"
-                                         loading="eager"
-                                         style="width: 100%; height: 100%; object-fit: {{ $objectFit }}; position: absolute; top: 0; left: 0;">
-                                </div>
-                            @else
-                                <div class="block-slideshow__slide-image block-slideshow__slide-image--desktop" style="position: relative; overflow: hidden;">
-                                    <img src="{{ $desktopImageUrl }}" alt="{{ $slide->title ?? 'Slide' }}"
-                                         loading="lazy"
-                                         style="width: 100%; height: 100%; object-fit: {{ $objectFit }}; position: absolute; top: 0; left: 0;">
-                                </div>
-                                <div class="block-slideshow__slide-image block-slideshow__slide-image--mobile" style="position: relative; overflow: hidden;">
-                                    <img src="{{ $mobileImageUrl }}" alt="{{ $slide->title ?? 'Slide' }}"
-                                         loading="lazy"
-                                         style="width: 100%; height: 100%; object-fit: {{ $objectFit }}; position: absolute; top: 0; left: 0;">
-                                </div>
-                            @endif
-                            <div class="block-slideshow__slide-content">
-                                <div class="block-slideshow__slide-title">{!! $slide->title !!}</div>
-                                <div class="block-slideshow__slide-text">{!! $slide->text !!}</div>
-                                @if($slide->btn_href && $slide->btn_name)
-                                <div class="block-slideshow__slide-button">
-                                    <span class="btn btn-primary btn-lg">{{ $slide->btn_name }}</span>
-                                </div>
+                        @foreach ($heroSlides as $slide)
+                            <a class="storefront-hero__slide" href="{{ $slide->btn_href ?: route('products.index') }}" aria-label="{{ strip_tags($slide->title ?: 'Explore promotion '.($loop->index + 1)) }}" style="--hero-image-fit: {{ in_array($slide->object_fit, ['contain', 'cover', 'fill', 'none', 'scale-down']) ? $slide->object_fit : 'cover' }};">
+                                <picture>
+                                    <source media="(max-width: 767px)" srcset="{{ asset($slide->mobile_src ?: $slide->desktop_src) }}">
+                                    <img src="{{ asset($slide->desktop_src) }}" alt="{{ strip_tags($slide->title ?: 'Featured store promotion') }}" width="1200" height="480" loading="{{ $loop->first ? 'eager' : 'lazy' }}" fetchpriority="{{ $loop->first ? 'high' : 'auto' }}" decoding="async">
+                                </picture>
+                                @if (filled($slide->title) || filled($slide->text) || filled($slide->btn_name))
+                                    <div class="storefront-hero__caption">
+                                        @if (filled($slide->title))<h2>{!! $slide->title !!}</h2>@endif
+                                        @if (filled($slide->text))<div class="storefront-hero__description">{!! $slide->text !!}</div>@endif
+                                        @if (filled($slide->btn_name))<span class="storefront-hero__cta">{{ $slide->btn_name }} <span aria-hidden="true">&rarr;</span></span>@endif
+                                    </div>
                                 @endif
-                            </div>
-                        </a>
+                            </a>
                         @endforeach
                     </div>
-                </div>
+                    @if ($heroSlides->count() > 1)
+                        <button class="storefront-hero__pause" type="button" aria-label="Pause slideshow" aria-pressed="false" data-paused="false">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path class="hero-pause-icon" d="M7 5h3v14H7zm7 0h3v14h-3z"/><path class="hero-play-icon" d="m8 5 11 7-11 7z"/></svg>
+                        </button>
+                    @endif
+                @else
+                    <div class="storefront-hero__welcome">
+                        <div class="storefront-hero__welcome-copy">
+                            <span class="storefront-hero__eyebrow">{{ $company->name ?? config('app.name') }}</span>
+                            <h1>{{ ($company->home_heading ?? null) ?: 'Find your next favourite.' }}</h1>
+                            <p>{{ ($company->tagline ?? null) ?: 'Explore our collection and discover something for you.' }}</p>
+                            <a class="storefront-hero__cta" href="{{ route('products.index') }}" wire:navigate.hover>Explore the shop <span aria-hidden="true">&rarr;</span></a>
+                        </div>
+                        <div class="storefront-hero__art" aria-hidden="true">
+                            <svg viewBox="0 0 240 260" fill="none"><ellipse cx="120" cy="237" rx="86" ry="12" fill="currentColor" opacity=".08"/><rect x="40" y="83" width="160" height="150" rx="24" fill="white"/><path d="M80 100V70a40 40 0 0 1 80 0v30" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path d="m91 157 20 20 40-44" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="198" cy="54" r="19" fill="currentColor" opacity=".12"/><path d="M32 44v20M22 54h20M205 177v16M197 185h16" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+                @endif
             </div>
+
+            @if ($showHeroBanner)
+                <a class="storefront-hero__promotion" href="{{ $heroBannerLink }}" aria-label="{{ $company->hero_banner_alt ?? 'Explore our featured collection' }}">
+                    @if (!empty($logo->hero_banner))
+                        <img src="{{ asset($logo->hero_banner) }}" alt="{{ $company->hero_banner_alt ?? 'Featured store promotion' }}" width="600" height="490" loading="eager" decoding="async">
+                    @else
+                        <div class="storefront-hero__promotion-copy">
+                            <span class="storefront-hero__eyebrow">Discover something new</span>
+                            <h2>{{ $heroCategory->name ?? 'Made for your everyday.' }}</h2>
+                            <span class="storefront-hero__promotion-link">Explore collection <span aria-hidden="true">&rarr;</span></span>
+                        </div>
+                        @if (!empty($heroCategory->image_id))
+                            <img class="storefront-hero__category-art" src="{{ asset($heroCategory->image_src) }}" alt="" width="240" height="240" decoding="async">
+                        @else
+                            <span class="storefront-hero__promotion-orbit" aria-hidden="true"></span>
+                        @endif
+                    @endif
+                </a>
+            @endif
         </div>
     </div>
-</div>
+</section>

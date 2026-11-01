@@ -290,15 +290,57 @@
     // block slideshow
     */
     $(function() {
-        $('.block-slideshow .owl-carousel').owlCarousel({
-            items: 1,
-            nav: true,
-            dots: true,
-            loop: true,
-            autoplay: true,
-            autoplayTimeout: 3000,
-            autoplaySpeed: 500,
-            autoplayHoverPause: true,
+        $('.block-slideshow .owl-carousel').each(function() {
+            const carousel = $(this);
+            const hasMultipleSlides = carousel.children().length > 1;
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let isPaused = reducedMotion;
+            const hero = carousel.closest('.storefront-hero__slider');
+            const pauseButton = hero.find('.storefront-hero__pause');
+            const labelControls = function(event) {
+                const currentCarousel = $(event.target);
+                currentCarousel.find('.owl-prev').attr('aria-label', 'Previous slide').removeAttr('role');
+                currentCarousel.find('.owl-next').attr('aria-label', 'Next slide').removeAttr('role');
+                currentCarousel.find('.owl-dot').each(function(index) {
+                    $(this).attr({ 'aria-label': 'Go to slide ' + (index + 1), 'aria-current': $(this).hasClass('active') ? 'true' : 'false' });
+                });
+                currentCarousel.find('.owl-item').each(function() {
+                    const isActive = $(this).hasClass('active');
+                    $(this).attr('aria-hidden', String(!isActive)).find('a').attr('tabindex', isActive ? '0' : '-1');
+                });
+            };
+
+            carousel.owlCarousel({
+                items: 1,
+                nav: hasMultipleSlides,
+                dots: hasMultipleSlides,
+                loop: hasMultipleSlides,
+                autoplay: hasMultipleSlides && !reducedMotion,
+                autoplayTimeout: 5000,
+                autoplaySpeed: reducedMotion ? 0 : 450,
+                autoplayHoverPause: true,
+                smartSpeed: reducedMotion ? 0 : 450,
+                navText: [
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>',
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>'
+                ],
+                onInitialized: labelControls,
+                onTranslated: labelControls,
+            });
+
+            pauseButton.attr({ 'aria-pressed': String(isPaused), 'data-paused': String(isPaused), 'aria-label': isPaused ? 'Play slideshow' : 'Pause slideshow' });
+            pauseButton.on('click', function() {
+                isPaused = !isPaused;
+                pauseButton.attr({ 'aria-pressed': String(isPaused), 'data-paused': String(isPaused), 'aria-label': isPaused ? 'Play slideshow' : 'Pause slideshow' });
+                carousel.trigger(isPaused ? 'stop.owl.autoplay' : 'play.owl.autoplay');
+            });
+            hero.on('focusin', function() {
+                carousel.trigger('stop.owl.autoplay');
+            }).on('focusout', function(event) {
+                if (!isPaused && !this.contains(event.relatedTarget)) {
+                    carousel.trigger('play.owl.autoplay');
+                }
+            });
         });
     });
 

@@ -74,6 +74,13 @@ class SettingController extends Controller
 
     protected function upload($file, $type)
     {
+        if ($type === 'hero_banner') {
+            return $this->uploadImage($file, [
+                'dir' => 'hero',
+                'resize' => false,
+            ]);
+        }
+
         if ($type == 'desktop') {
             return $this->uploadImage($file, [
                 'dir' => 'logo',

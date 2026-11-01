@@ -48,7 +48,40 @@ class ComposerServiceProvider extends ServiceProvider
         }
 
         View::composer(['layouts.yellow.master'], function ($view): void {
-            $view->with('categories', Category::nested(10));
+            $view->with('categories', Category::nested());
+        });
+
+        View::composer('partials.header.more', function ($view): void {
+            $view->with('extraMenuItems', cacheMemo()->rememberForever('menus:topbar-menu', fn () => Menu::whereSlug('topbar-menu')->first()?->menuItems ?: new Collection));
+        });
+
+        View::composer(['partials.trust-services', 'admin.settings.trust-services'], function ($view): void {
+            $storedServices = $view->name() === 'admin.settings.trust-services'
+                ? old('services', setting('services'))
+                : setting('services');
+            $serviceSettings = array_replace(config('storefront.trust_defaults'), (array) $storedServices);
+            $serviceItems = data_get($storedServices, 'items');
+
+            if ($serviceItems === null) {
+                $serviceItems = collect(['one' => 'shield', 'two' => 'headphones', 'three' => 'truck', 'four' => 'return'])
+                    ->map(fn ($icon, $key): array => [
+                        'title' => data_get($storedServices, $key.'.title', ''),
+                        'detail' => data_get($storedServices, $key.'.detail', ''),
+                        'icon' => $icon,
+                        'enabled' => filled(data_get($storedServices, $key.'.title')),
+                        'link' => '',
+                    ])->values();
+            }
+
+            $serviceItems = collect($serviceItems)->values()->map(fn ($item, $index): array => array_replace([
+                'title' => '', 'detail' => '', 'icon' => 'shield', 'enabled' => true, 'link' => '', 'order' => $index,
+            ], (array) $item))->sortBy('order')->values();
+
+            if (data_get($storedServices, 'columns') === null) {
+                $serviceSettings['columns'] = min(4, max(2, $serviceItems->where('enabled', true)->count()));
+            }
+
+            $view->with(compact('serviceSettings', 'serviceItems'));
         });
 
         $settingsPages = [

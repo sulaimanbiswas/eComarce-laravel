@@ -60,6 +60,12 @@ class HomeSectionRequest extends FormRequest
             'items' => 'nullable|array',
             'categories' => 'nullable|array',
             'content' => 'nullable|string',
+            'data.layout' => ['sometimes', 'in:standard,showcase'],
+            'data.showcase_heading' => ['nullable', 'string', 'max:120'],
+            'data.showcase_limit' => ['sometimes', 'integer', 'between:1,12'],
+            'data.showcase_actions' => ['sometimes', 'in:both,default'],
+            'data.showcase_background' => ['sometimes', 'regex:/^#[a-f0-9]{6}$/i'],
+            'data.showcase_accent' => ['sometimes', 'regex:/^#[a-f0-9]{6}$/i'],
         ];
 
         // Only require rows/cols for product sections (not content or banner)
@@ -96,5 +102,16 @@ class HomeSectionRequest extends FormRequest
         ];
 
         return $rules;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'data.layout.in' => 'Choose the standard or best selling showcase layout.',
+            'data.showcase_limit.between' => 'The showcase can display between 1 and 12 products.',
+            'data.showcase_background.regex' => 'Choose a valid section background color.',
+            'data.showcase_accent.regex' => 'Choose a valid heading accent color.',
+            'data.showcase_actions.in' => 'Choose both card buttons or the store default button.',
+        ];
     }
 }

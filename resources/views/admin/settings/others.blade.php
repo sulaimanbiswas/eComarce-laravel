@@ -196,7 +196,7 @@
                 </div>
                 <div class="checkbox checkbox-secondary">
                     <input type="hidden" name="services[enabled]" value="0">
-                    <x-checkbox id="services" name="services[enabled]" value="1" :checked="!!($services->enabled ?? false)" />
+                    <x-checkbox id="services" name="services[enabled]" value="1" :checked="!!old('services.enabled', $services->enabled ?? false)" />
                     <label for="services" class="my-1">`Services` Section</label>
                 </div>
                 <div class="checkbox checkbox-secondary">
@@ -246,30 +246,5 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        @php
-            $serviceIcons = config('services.service_icons', []);
-        @endphp
-        @foreach (config('services.services', []) as $num => $icon)
-            <div class="col-md-6">
-                <div class="input-group">
-                    <div class="mr-1 input-group-prepend">
-                        <span class="input-group-text">
-                            {!! str_replace('<svg ', '<svg width="24px" height="24px" ', $serviceIcons[$num] ?? '') !!}
-                        </span>
-                    </div>
-                    <div class="" style="flex: 1;">
-                        <div class="mb-1 form-group">
-                            <label for="" class="ml-1">Title</label>
-                            <x-input name="services[{{ $num }}][title]" :value="$services->$num->title ?? ''" />
-                        </div>
-                        <div class="mt-2 mb-0 form-group">
-                            <label for="" class="ml-1">Detail</label>
-                            <x-input name="services[{{ $num }}][detail]" :value="$services->$num->detail ?? ''" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endforeach
-    </div>
+    @include('admin.settings.trust-services')
 </div>

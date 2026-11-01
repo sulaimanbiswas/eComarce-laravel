@@ -108,37 +108,13 @@
 @section('content')
 
 @include('partials.slides')
+@include('partials.featured-categories')
 
 @if(isOninda() && config('app.resell') && auth('user')->guest())
 @include('partials.auth-forms')
 @endif
 
-<!-- .block-features -->
-@if(($services = setting('services'))->enabled ?? false)
-@php
-    $serviceIcons = config('services.service_icons', []);
-@endphp
-<div class="block block-features block-features--layout--classic d-none d-md-block">
-    <div class="container">
-        <div class="block-features__list">
-            @foreach(config('services.services', []) as $num => $icon)
-                <div class="block-features__item">
-                    <div class="block-features__icon">
-                        {!! str_replace('<svg ', '<svg width="48px" height="48px" ', $serviceIcons[$num] ?? '') !!}
-                    </div>
-                    <div class="block-features__content">
-                        <div class="block-features__title">{{ $services->$num->title }}</div>
-                        <div class="block-features__subtitle">{{ $services->$num->detail }}</div>
-                    </div>
-                </div>
-                @if(!$loop->last)
-                    <div class="block-features__divider"></div>
-                @endif
-            @endforeach
-        </div>
-    </div>
-</div><!-- .block-features / end -->
-@endif
+@include('partials.trust-services')
 @if(isOninda())
 <div class="block">
     <div class="container">
@@ -148,7 +124,7 @@
 @endif
 
 <!-- Home Page Heading (e.g: Trusted Online Shopping in Bangladesh) -->
-@if (!empty($company->home_heading))
+@if (!empty($company->home_heading) && slides()->isNotEmpty())
     <div class="block my-4">
         <div class="container">
             <h1 class="text-center home-page-heading" style="font-size: 2rem; font-weight: 700; color: #3d464d; margin: 1.5rem 0;">{{ $company->home_heading }}</h1>
@@ -204,56 +180,18 @@
 </div>
 @endif
 
-@if(($show_option = setting('show_option'))->category_carousel ?? false)
-<div class="block block-products-carousel" data-layout="grid-cat">
-    <div class="container">
-        <div class="block-header">
-            <h3 class="block-header__title" style="padding: 0.375rem 1rem;">
-                <a href="{{ route('categories') }}" wire:navigate.hover>Categories</a>
-            </h3>
-            <div class="block-header__divider"></div>
-            <div class="block-header__arrows-list">
-                <button class="block-header__arrow block-header__arrow--left" type="button" aria-label="Previous">
-                    <svg width="7px" height="11px" viewBox="0 0 7 11"><path d="M6.7.3c-.4-.4-.9-.4-1.3 0L0 5.5l5.4 5.2c.4.4.9.3 1.3 0 .4-.4.4-1 0-1.3l-4-3.9 4-3.9c.4-.4.4-1 0-1.3z"/></svg>
-                </button>
-                <button class="block-header__arrow block-header__arrow--right" type="button" aria-label="Next">
-                    <svg width="7px" height="11px" viewBox="0 0 7 11"><path d="M.3 10.7c.4.4.9.4 1.3 0L7 5.5 1.6.3C1.2-.1.7 0 .3.3c-.4.4-.4 1 0 1.3l4 3.9-4 3.9c-.4.4-.4 1 0 1.3z"/></svg>
-                </button>
-            </div>
-        </div>
-        <div class="block-products-carousel__slider">
-            <div class="block-products-carousel__preloader"></div>
-            <div class="owl-carousel">
-                @foreach(categories()->chunk(1) as $categories)
-                <div>
-                    @foreach($categories as $category)
-                    <div class="products-list__item">
-                        <div class="product-card">
-                            <div class="product-card__image">
-                                <a href="{{ route('categories.products', $category) }}" wire:navigate.hover>
-                                    <img src="{{ cdn($category->image_src, 100, 100) }}" alt="Product Image" loading="lazy" decoding="async">
-                                </a>
-                            </div>
-                            <div class="product-card__info">
-                                <div class="product-card__name">
-                                    <h4 style="overflow: hidden;text-overflow:ellipsis; font-size: 16px; font-weight: 700;">
-                                        <a href="{{ route('categories.products', $category) }}" wire:navigate.hover title="{{$category->name}}">{{ $category->name }}</a>
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-</div>
-@endif
-
+@php $firstProductSection = true; @endphp
 @foreach(sections() as $section)
-@if($section->type == 'pure-grid')
+@php
+    $isProductSection = in_array($section->type, ['pure-grid', 'carousel-grid']);
+    $useShowcase = $isProductSection && (($section->data->layout ?? ($firstProductSection ? 'showcase' : 'standard')) === 'showcase');
+    if ($isProductSection) {
+        $firstProductSection = false;
+    }
+@endphp
+@if($useShowcase)
+    @include('partials.products.best-selling', ['section' => $section, 'products' => $section->products()])
+@elseif($section->type == 'pure-grid')
     <!-- .block-products-carousel -->
     @if(config('app.infinite_scroll_section', false))
     <x-infinite-scroll-section :section="$section" />

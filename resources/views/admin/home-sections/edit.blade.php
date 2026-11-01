@@ -36,6 +36,7 @@
             <div class="p-3 card-body">
                 <x-form :action="route('admin.home-sections.update', $section)" method="PATCH">
                     <div class="row">
+                        @include('admin.home-sections.showcase-options')
                         <div class="col-md-4">
                             <div class="form-group">
                                 <x-label for="title" />

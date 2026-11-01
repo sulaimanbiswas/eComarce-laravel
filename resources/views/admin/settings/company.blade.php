@@ -156,6 +156,39 @@
 
 @include('admin.settings.social')
 
+<div class="card mt-3">
+    <div class="card-header p-3">Homepage Hero Banner</div>
+    <div class="card-body">
+        <div class="form-group">
+            <input type="hidden" name="company[hero_banner_enabled]" value="0">
+            <input type="checkbox" id="hero-banner-enabled" name="company[hero_banner_enabled]" value="1" @checked(old('company.hero_banner_enabled', $company->hero_banner_enabled ?? true))>
+            <label for="hero-banner-enabled">Show the banner beside the homepage slider</label>
+            <x-error field="company.hero_banner_enabled" />
+        </div>
+        <div class="form-group">
+            <label for="hero-banner-image">Banner image</label>
+            @if (!empty($logo->hero_banner))
+                <img src="{{ asset($logo->hero_banner) }}" alt="Current hero banner" class="d-block mb-2" style="max-width: 240px; max-height: 200px; object-fit: contain;">
+            @endif
+            <input type="file" name="logo[hero_banner]" id="hero-banner-image" accept="image/*" class="form-control">
+            <small class="form-text text-muted">Recommended: 600 × 490 pixels. Maximum 5 MB. Leave empty to keep the current image.</small>
+            <x-error field="logo.hero_banner" />
+        </div>
+        <div class="row">
+            <div class="col-md-6 form-group">
+                <label for="hero-banner-link">Banner link</label>
+                <x-input name="company[hero_banner_link]" id="hero-banner-link" :value="$company->hero_banner_link ?? ''" placeholder="/shop or https://example.com/offer" />
+                <x-error field="company.hero_banner_link" />
+            </div>
+            <div class="col-md-6 form-group">
+                <label for="hero-banner-alt">Image description</label>
+                <x-input name="company[hero_banner_alt]" id="hero-banner-alt" :value="$company->hero_banner_alt ?? ''" placeholder="Describe the featured promotion" />
+                <x-error field="company.hero_banner_alt" />
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     $(document).ready(function() {
