@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProductReviewRequest;
+use App\Http\Requests\StorefrontCheckoutRequest;
 use App\Jobs\CallOnindaOrderApi;
 use App\Models\Admin;
 use App\Models\Category;
@@ -15,13 +17,16 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\DeliveryAreaService;
 use App\Services\FacebookPixelService;
+use App\Services\OrderAccessService;
+use App\Services\OrderProductService;
 use App\Services\UtmTrackingService;
 use App\Traits\ResolvesPackagingCharge;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StorefrontController extends Controller
 {
@@ -292,150 +297,129 @@ class StorefrontController extends Controller
      * POST /api/storefront/checkout
      * Places a retail order (Cash on Delivery).
      */
-    public function checkout(Request $request): JsonResponse
+    public function checkout(StorefrontCheckoutRequest $request, OrderProductService $orderProductsService): JsonResponse
     {
-        $deliveryAreas = collect(setting('delivery_areas') ?? [])->pluck('name')->toArray();
+        $data = $request->validated();
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string'],
-            'address' => ['required', 'string', 'max:500'],
-            'note' => ['nullable', 'string', 'max:1000'],
-            'shipping' => ['required', Rule::in($deliveryAreas)],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.variation_id' => ['nullable'],
-        ]);
+        [$order, $subtotal, $orderProducts, $shippingCost] = (new Product)->getConnection()->transaction(function () use ($data, $orderProductsService): array {
+            $areaSetting = collect(setting('delivery_areas') ?? [])->firstWhere('name', $data['shipping']);
+            $shippingCost = (float) data_get($areaSetting, 'cost', 0);
 
-        $areaSetting = collect(setting('delivery_areas') ?? [])->firstWhere('name', $data['shipping']);
-        $shippingCost = (float) ($areaSetting['cost'] ?? 0);
+            // Build products JSON. Prefer the requested variation when supplied so the
+            // ordered line item matches what the customer picked in the UI.
+            $orderProducts = [];
+            $subtotal = 0;
 
-        // Build products JSON. Prefer the requested variation when supplied so the
-        // ordered line item matches what the customer picked in the UI.
-        $orderProducts = [];
-        $subtotal = 0;
+            foreach ($orderProductsService->resolveItems($data['items']) as $resolvedItem) {
+                $product = $resolvedItem['product'];
+                $quantity = $resolvedItem['quantity'];
+                $price = $product->selling_price;
+                $total = $price * $quantity;
+                $subtotal += $total;
 
-        $variationIds = collect($data['items'])->pluck('variation_id')->filter()->unique()->toArray();
-        $productIds = collect($data['items'])->pluck('id')->filter()->unique()->toArray();
-
-        $variations = empty($variationIds) ? collect() : Product::with(['parent.categories'])->whereIn('id', $variationIds)->get()->keyBy('id');
-        $products = empty($productIds) ? collect() : Product::with(['categories'])->whereIn('id', $productIds)->get()->keyBy('id');
-
-        foreach ($data['items'] as $item) {
-            $variationId = $item['variation_id'] ?? null;
-            $product = $variationId ? $variations->get($variationId) : null;
-            if (! $product) {
-                $product = $products->get($item['id']);
-            }
-            if (! $product) {
-                continue;
+                $orderProducts[$product->id] = (object) [
+                    'id' => $product->id,
+                    'name' => $product->varName, // "Parent Name [Variation Name]" for variations, else product name
+                    'slug' => $product->slug,
+                    'image' => $product->base_image?->src ?? '',
+                    'price' => $price,
+                    'purchase_price' => $product->average_purchase_price ?? $price,
+                    'quantity' => $quantity,
+                    'total' => $total,
+                    'parent_id' => $product->parent_id,
+                    'shipping_inside' => $product->shipping_inside,
+                    'shipping_outside' => $product->shipping_outside,
+                    'category' => $product->category,
+                ];
             }
 
-            $price = $product->selling_price;
-            $total = $price * $item['quantity'];
-            $subtotal += $total;
+            if (empty($orderProducts)) {
+                throw ValidationException::withMessages(['items' => 'No valid products found.']);
+            }
 
-            $orderProducts[$product->id] = (object) [
-                'id' => $product->id,
-                'name' => $product->varName, // "Parent Name [Variation Name]" for variations, else product name
-                'slug' => $product->slug,
-                'image' => $product->base_image?->src ?? '',
-                'price' => $price,
-                'purchase_price' => $product->average_purchase_price ?? $price,
-                'quantity' => $item['quantity'],
-                'total' => $total,
-                'parent_id' => $product->parent_id,
-                'shipping_inside' => $product->shipping_inside,
-                'shipping_outside' => $product->shipping_outside,
-                'category' => $product->category,
-            ];
-        }
+            // Format phone
+            $phone = $data['phone'];
+            if (Str::startsWith($phone, '01')) {
+                $phone = '+88'.$phone;
+            } elseif (Str::startsWith($phone, '8801')) {
+                $phone = '+'.$phone;
+            }
 
-        if (empty($orderProducts)) {
-            return response()->json(['message' => 'No valid products found.'], 422);
-        }
+            // Get or Create User
+            $user = User::query()->firstOrCreate(
+                ['phone_number' => $phone],
+                [
+                    'name' => $data['name'],
+                    'address' => $data['address'],
+                    'email_verified_at' => now(),
+                    'password' => bcrypt(Str::random(32)),
+                    'remember_token' => Str::random(10),
+                ]
+            );
 
-        // Format phone
-        $phone = $data['phone'];
-        if (Str::startsWith($phone, '01')) {
-            $phone = '+88'.$phone;
-        } elseif (Str::startsWith($phone, '8801')) {
-            $phone = '+'.$phone;
-        }
+            // Assign Admin
+            $oldOrders = Order::select(['id', 'admin_id', 'status'])->where('phone', $phone)->get();
+            $adminIds = $oldOrders->pluck('admin_id')->unique()->toArray();
 
-        // Get or Create User
-        $user = User::query()->firstOrCreate(
-            ['phone_number' => $phone],
-            [
-                'name' => $data['name'],
-                'address' => $data['address'],
-                'email_verified_at' => now(),
-                'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-                'remember_token' => Str::random(10),
-            ]
-        );
-
-        // Assign Admin
-        $oldOrders = Order::select(['id', 'admin_id', 'status'])->where('phone', $phone)->get();
-        $adminIds = $oldOrders->pluck('admin_id')->unique()->toArray();
-
-        if (config('app.round_robin_order_receiving')) {
-            $adminQ = Admin::orderByRaw('CASE WHEN is_active = 1 THEN 0 ELSE 1 END, role_id desc, last_order_received_at asc');
-            $admin = count($adminIds) > 0 ? $adminQ->whereIn('id', $adminIds)->first() ?? $adminQ->first() : $adminQ->first();
-        } else {
-            $adminQ = Admin::where('role_id', Admin::SALESMAN)->where('is_active', true)->inRandomOrder();
-            if (count($adminIds) > 0) {
-                $admin = $adminQ->whereIn('id', $adminIds)->first() ?? $adminQ->first() ?? Admin::where('is_active', true)->inRandomOrder()->first();
+            if (config('app.round_robin_order_receiving')) {
+                $adminQ = Admin::orderByRaw('CASE WHEN is_active = 1 THEN 0 ELSE 1 END, role_id desc, last_order_received_at asc');
+                $admin = count($adminIds) > 0 ? $adminQ->whereIn('id', $adminIds)->first() ?? $adminQ->first() : $adminQ->first();
             } else {
-                $admin = $adminQ->first() ?? Admin::where('is_active', true)->inRandomOrder()->first();
+                $adminQ = Admin::where('role_id', Admin::SALESMAN)->where('is_active', true)->inRandomOrder();
+                if (count($adminIds) > 0) {
+                    $admin = $adminQ->whereIn('id', $adminIds)->first() ?? $adminQ->first() ?? Admin::where('is_active', true)->inRandomOrder()->first();
+                } else {
+                    $admin = $adminQ->first() ?? Admin::where('is_active', true)->inRandomOrder()->first();
+                }
             }
-        }
-        $adminId = $admin->id ?? Admin::query()->inRandomOrder()->first()->id;
+            $adminId = $admin->id ?? Admin::query()->inRandomOrder()->first()->id;
 
-        $isFraud = $oldOrders->whereIn('status', ['CANCELLED', 'RETURNED', 'PAID_RETURN'])->count() > 0;
-        $isRepeat = $oldOrders->count() > 0;
+            $isFraud = $oldOrders->whereIn('status', ['CANCELLED', 'RETURNED', 'PAID_RETURN'])->count() > 0;
+            $isRepeat = $oldOrders->count() > 0;
 
-        $purchaseCost = 0;
-        foreach ($orderProducts as $productItem) {
-            $purchaseCost += $productItem->purchase_price * $productItem->quantity;
-        }
+            $purchaseCost = 0;
+            foreach ($orderProducts as $productItem) {
+                $purchaseCost += $productItem->purchase_price * $productItem->quantity;
+            }
 
-        $order = Order::create([
-            'source_id' => config('app.instant_order_forwarding') ? 0 : null,
-            'admin_id' => $adminId,
-            'user_id' => $user->id,
-            'type' => Order::ONLINE,
-            'name' => $data['name'],
-            'phone' => $phone,
-            'address' => $data['address'],
-            'note' => $data['note'] ?? null,
-            'status' => 'PENDING',
-            'status_at' => now()->toDateTimeString(),
-            'products' => $orderProducts,
-            'data' => [
-                'subtotal' => $subtotal,
-                'shipping_cost' => $shippingCost,
-                'retail_delivery_fee' => $shippingCost,
-                'advanced' => 0,
-                'discount' => 0,
-                'retail_discount' => 0,
-                'courier' => 'Pathao',
-                'city_id' => '',
-                'area_id' => '',
-                'weight' => 0.5,
-                'packaging_charge' => $this->resolvePackagingCharge(array_keys($orderProducts)),
-                'is_fraud' => $isFraud,
-                'is_repeat' => $isRepeat,
-                'shipping_area' => $data['shipping'],
-                'coupon_discount' => 0,
-                'coupon_id' => null,
-                'coupon_code' => null,
-                'purchase_cost' => $purchaseCost,
-                'city_name' => 'N/A',
-                'area_name' => 'N/A',
-            ],
-        ]);
+            $order = Order::create([
+                'source_id' => config('app.instant_order_forwarding') ? 0 : null,
+                'admin_id' => $adminId,
+                'user_id' => $user->id,
+                'type' => Order::ONLINE,
+                'name' => $data['name'],
+                'phone' => $phone,
+                'address' => $data['address'],
+                'note' => $data['note'] ?? null,
+                'status' => 'PENDING',
+                'status_at' => now()->toDateTimeString(),
+                'products' => $orderProducts,
+                'data' => [
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'retail_delivery_fee' => $shippingCost,
+                    'advanced' => 0,
+                    'discount' => 0,
+                    'retail_discount' => 0,
+                    'courier' => 'Pathao',
+                    'city_id' => '',
+                    'area_id' => '',
+                    'weight' => 0.5,
+                    'packaging_charge' => $this->resolvePackagingCharge(array_keys($orderProducts)),
+                    'is_fraud' => $isFraud,
+                    'is_repeat' => $isRepeat,
+                    'shipping_area' => $data['shipping'],
+                    'coupon_discount' => 0,
+                    'coupon_id' => null,
+                    'coupon_code' => null,
+                    'purchase_cost' => $purchaseCost,
+                    'city_name' => 'N/A',
+                    'area_name' => 'N/A',
+                ],
+            ]);
+
+            return [$order, $subtotal, $orderProducts, $shippingCost];
+        });
 
         if (setting('meta_pixel') || config('meta-pixel.meta_pixel') || setting('pixel_ids')) {
             $facebookProducts = [];
@@ -482,6 +466,7 @@ class StorefrontController extends Controller
             'order' => [
                 'id' => $order->id,
                 'total' => $subtotal + $shippingCost,
+                'tracking_url' => URL::temporarySignedRoute('thank-you', now()->addDays(7), ['order' => $order->id]),
             ],
         ], 201);
     }
@@ -549,85 +534,34 @@ class StorefrontController extends Controller
     /**
      * POST /api/storefront/products/{slug}/reviews
      */
-    public function submitReview(Request $request, Product $product): JsonResponse
+    public function submitReview(ProductReviewRequest $request, Product $product, OrderAccessService $orderAccess): JsonResponse
     {
-        $data = $request->validate([
-            'review' => ['required', 'string', 'min:5', 'max:1000'],
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string'],
-            'order_id' => ['required', 'string', 'max:20'],
-        ]);
-
-        $isSecretCode = $data['order_id'] === '--0' && $data['phone'] === '--0';
-        $user = null;
-
-        if ($isSecretCode) {
-            // Bypass: Use random user or create guest
-            $user = User::inRandomOrder()->first();
-            if (! $user) {
-                $user = User::create([
-                    'name' => 'Guest User '.rand(1000, 9999),
-                    'phone_number' => 'guest_'.rand(1000000, 9999999),
-                    'password' => bcrypt(Str::random(32)),
-                    'is_active' => true,
-                ]);
-            }
-        } else {
-            // Normal: Validate order exists and matches phone
-            $order = Order::find($data['order_id']);
-            if (! $order) {
-                return response()->json(['message' => 'The order ID you provided does not exist.'], 422);
-            }
-
-            if ($order->phone !== $data['phone']) {
-                return response()->json(['message' => 'The phone number does not match the order.'], 422);
-            }
-
-            // Check if order contains the product
-            // Assuming products is an array or json in Order model
-            $orderProducts = is_array($order->products) ? $order->products : json_decode($order->products, true);
-            if (! $orderProducts || ! isset($orderProducts[$product->id])) {
-                // If it's a flat array of IDs
-                if (! in_array($product->id, (array) $orderProducts) && ! in_array($product->id, array_keys((array) $orderProducts))) {
-                    return response()->json(['message' => 'This order does not contain the product you are reviewing.'], 422);
-                }
-            }
-
-            // Find or create user
-            $user = User::firstOrCreate(
-                ['phone_number' => $data['phone']],
-                [
-                    'name' => $data['name'],
-                    'password' => bcrypt(Str::random(16)),
-                    'is_active' => true,
-                ]
-            );
+        $data = $request->validated();
+        $order = Order::find($data['order_id']);
+        if (! $order || ! $orderAccess->phoneMatches($order, $data['phone_number'])) {
+            throw ValidationException::withMessages(['order_id' => 'The order ID and mobile number do not match.']);
         }
 
-        // Check if user already reviewed this product
-        $existing = $product->reviews()
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($existing) {
-            return response()->json(['message' => 'You have already reviewed this product.'], 422);
+        $containsProduct = collect($order->products)->contains(fn ($item): bool => (int) data_get($item, 'id') === (int) $product->id || (int) data_get($item, 'parent_id') === (int) $product->id);
+        if (! $containsProduct) {
+            throw ValidationException::withMessages(['order_id' => 'This order does not contain the selected product.']);
         }
 
-        // Add review
+        $user = $order->user ?? User::firstOrCreate(
+            ['phone_number' => $order->phone],
+            ['name' => $order->name, 'password' => bcrypt(Str::random(32)), 'is_active' => true],
+        );
+        if ($product->reviews()->where('user_id', $user->id)->exists()) {
+            throw ValidationException::withMessages(['review' => 'You have already reviewed this product.']);
+        }
+
         $product->addReview([
             'review' => $data['review'],
-            'approved' => $isSecretCode, // Auto-approve if secret code
-            'ratings' => [
-                'overall' => (int) $data['rating'],
-            ],
+            'approved' => false,
+            'ratings' => ['overall' => (int) $data['rating']],
         ], $user->id);
 
-        $message = $isSecretCode
-            ? 'Your review has been submitted and approved.'
-            : 'Your review has been submitted and is pending approval.';
-
-        return response()->json(['message' => $message]);
+        return response()->json(['message' => 'Your review has been submitted and is pending approval.']);
     }
 
     /**

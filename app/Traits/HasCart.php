@@ -5,27 +5,37 @@ namespace App\Traits;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Services\FacebookPixelService;
+use App\Services\OrderProductService;
 use Azmolla\Shoppingcart\Facades\Cart;
+use Illuminate\Validation\ValidationException;
 use Spatie\GoogleTagManager\GoogleTagManagerFacade;
 
 trait HasCart
 {
     public function addToKart(Product $product, int $quantity = 1, string $instance = 'default', $retailPrice = null)
     {
-        session(['kart' => $instance]);
-        if (in_array($instance, ['kart', 'landing'], true)) {
-            Cart::instance($instance)->destroy();
-        }
-
         if (! ($product->parent ?? $product)->is_active) {
             $this->dispatch('notify', ['message' => 'Product is inactive and cannot be added to cart', 'type' => 'danger']);
 
             return;
         }
 
-        $fraudQuantity = setting('fraud')->max_qty_per_product ?? 3;
-        $maxQuantity = (int) $fraudQuantity;
-        $quantity = min($quantity, $maxQuantity);
+        $product->loadMissing('parent');
+        $orderProducts = app(OrderProductService::class);
+        $existingQuantity = in_array($instance, ['kart', 'landing'], true) ? 0 : (int) cart()->instance($instance)->content()->where('id', $product->id)->sum('qty');
+        try {
+            $orderProducts->validateQuantity($product, $existingQuantity + $quantity);
+        } catch (ValidationException $exception) {
+            $this->dispatch('notify', ['message' => collect($exception->errors())->flatten()->first(), 'type' => 'danger']);
+
+            return;
+        }
+        $maxQuantity = $orderProducts->maximumQuantity($product);
+
+        session(['kart' => $instance]);
+        if (in_array($instance, ['kart', 'landing'], true)) {
+            Cart::instance($instance)->destroy();
+        }
 
         $productData = (new ProductResource($product))->toCartItem($quantity);
         $productData['max'] = $maxQuantity;

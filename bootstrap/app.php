@@ -46,8 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'doNotCacheResponse' => DoNotCacheResponse::class,
             'accounting.enabled' => EnsureAccountingEnabled::class,
             'investment.enabled' => EnsureInvestmentEnabled::class,
-        ])
-            ->validateCsrfTokens(except: ['*']);
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {

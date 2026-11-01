@@ -21,10 +21,15 @@
                             <h1>Track Order</h1>
                         </div>
                         <p class="mb-4 pt-2">You can always track your orders from here.</p>
-                        <form action="{{ route('track-order') }}">
+                        <form action="{{ route('track-order') }}" method="post">
+                            @csrf
                             <div class="form-group">
                                 <label for="order">Please enter your order ID</label>
-                                <x-input id="order" name="order" placeholder="Example: 1234" />
+                                <x-input id="order" name="order" placeholder="Example: 1234" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="tracking-phone">Mobile number used for the order</label>
+                                <x-input id="tracking-phone" name="phone" type="tel" placeholder="01XXXXXXXXX" required />
                             </div>
                             <div class="pt-3">
                                 <button type="submit" class="btn btn-primary btn-lg btn-block">Track</button>

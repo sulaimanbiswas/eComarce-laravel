@@ -13,6 +13,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Pathao\Facade\Pathao;
+use App\Services\OrderAccessService;
 use App\Traits\HasProductFilters;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -428,8 +429,10 @@ class ApiController extends Controller
         return cacheRememberNamespaced('api_category', 'slug:'.$decodedSlug, now()->addHours(12), fn () => Category::where('slug', $decodedSlug)->firstOrFail()->toArray());
     }
 
-    public function order(Order $order)
+    public function order(Request $request, Order $order, OrderAccessService $orderAccess): array
     {
+        $orderAccess->authorize($request, $order);
+
         return array_merge($order->toArray(), [
             'created_at' => $order->created_at->format('Y-m-d H:i:s'),
         ]);
@@ -449,6 +452,8 @@ class ApiController extends Controller
 
     public function pendingCount(Admin $admin): JsonResponse
     {
+        abort_if(auth('admin')->user()->is('salesman') && $admin->id !== auth('admin')->id(), 403);
+
         $count = Order::where('status', 'PENDING')->when($admin->role_id == Admin::SALESMAN, function ($query) use (&$admin): void {
             $query->where('admin_id', $admin->id);
         })->count();
@@ -535,15 +540,9 @@ class ApiController extends Controller
 
     public function steadfastWebhook(Request $request)
     {
-        info('steadfast headers:', $request->headers->all());
-        info('steadfast webhook:', $request->all());
         $SteadFast = setting('SteadFast');
-        if ($request->header('Authorization') !== 'Bearer '.$SteadFast->key) {
-            info('steadfast webhook failed', [
-                'header' => $request->header('Authorization'),
-                'expected' => 'Bearer '.$SteadFast->key,
-            ]);
-
+        $webhookSecret = (string) ($SteadFast->key ?? '');
+        if ($webhookSecret === '' || ! hash_equals('Bearer '.$webhookSecret, (string) $request->header('Authorization'))) {
             return response()->json(['message' => 'Webhook failed'], 401);
         }
 
@@ -622,24 +621,10 @@ class ApiController extends Controller
 
     public function redxWebhook(Request $request)
     {
-        info('redx headers:', $request->headers->all());
-        info('redx webhook:', $request->all());
-
-        // Validate token if configured in redx.access_token and passed in request
         $expectedToken = (string) config('redx.store_id');
-        if ($expectedToken && $request->has('token')) {
-            $providedToken = trim((string) $request->get('token'));
-
-            info('redx webhook token mismatch', [
-                'provided' => $providedToken,
-                'expected' => $expectedToken,
-                'provided-type' => gettype($providedToken),
-                'expected-type' => gettype($expectedToken),
-            ]);
-
-            if ($providedToken != $expectedToken) {
-                return response()->json(['message' => 'Unauthorized'], 401);
-            }
+        $providedToken = $request->input('token');
+        if ($expectedToken === '' || ! is_string($providedToken) || ! hash_equals($expectedToken, trim($providedToken))) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $invoice = (int) preg_replace('/\D/', '', (string) ($request->invoice_number ?? $request->merchant_invoice_id));

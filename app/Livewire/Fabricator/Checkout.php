@@ -4,6 +4,8 @@ namespace App\Livewire\Fabricator;
 
 use App\Livewire\ProductDetail;
 use App\Models\Product;
+use App\Services\OrderProductService;
+use Illuminate\Validation\ValidationException;
 
 class Checkout extends \App\Livewire\Checkout
 {
@@ -17,6 +19,9 @@ class Checkout extends \App\Livewire\Checkout
         if (! ($row = cart($id)) && ($product = Product::find($id))) {
             ProductDetail::landing($product);
         } elseif ($row->qty < $row->options->max || $row->options->max === -1) {
+            $product = Product::find($row->id);
+            throw_unless($product, ValidationException::withMessages(['products' => 'This product is no longer available.']));
+            app(OrderProductService::class)->validateQuantity($product, (int) $row->qty + 1);
             cart()->update($row->rowId, $row->qty + 1);
         }
         $this->cartUpdated();

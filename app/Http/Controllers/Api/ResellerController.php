@@ -52,7 +52,7 @@ class ResellerController extends Controller
         $dataTable = DataTables::of($resellers)
             ->addIndexColumn()
             ->editColumn('id', fn ($row): string => $row->id)
-            ->editColumn('name', fn ($row): string => '<a href="'.route('admin.orders.index', ['user_id' => $row->id, 'status' => '']).'">'.$row->name.'</a>')
+            ->editColumn('name', fn ($row): string => '<a href="'.route('admin.orders.index', ['user_id' => $row->id, 'status' => '']).'">'.e($row->name).'</a>')
             ->editColumn('shop_name', function ($row) {
                 $html = e($row->shop_name ?? '-');
                 if ($row->isConnected()) {

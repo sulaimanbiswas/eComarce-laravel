@@ -162,23 +162,25 @@ Route::middleware([GoogleTagManagerMiddleware::class, MetaPixelMiddleware::class
 
     Route::get('/thank-you', OrderTrackController::class)
         ->name('thank-you')
-        ->middleware('doNotCacheResponse');
+        ->middleware(['doNotCacheResponse', 'throttle:30,1']);
 
     Route::match(['get', 'post'], 'track-order', OrderTrackController::class)
         ->name('track-order')
-        ->middleware('doNotCacheResponse');
+        ->middleware(['doNotCacheResponse', 'throttle:30,1']);
 
     // Cart API routes (moved from api.php to use same session)
     Route::post('cart/add', [CartController::class, 'add'])->name('cart.add');
-    Route::get('cart', [CartController::class, 'get'])->name('cart.get');
+    Route::get('cart/content', [CartController::class, 'get'])->name('cart.get');
 
 });
 
-Route::get('/storage-link', [ApiController::class, 'storageLink']);
-Route::get('/scout-flush', [ApiController::class, 'scoutFlush']);
-Route::get('/scout-import', [ApiController::class, 'scoutImport']);
-Route::get('/link-optimize', [ApiController::class, 'linkOptimize']);
-Route::get('/cache-clear', [ApiController::class, 'clearCache'])->name('clear.cache');
+Route::middleware(['auth:admin', 'can:manage-resellers'])->group(function (): void {
+    Route::post('/storage-link', [ApiController::class, 'storageLink']);
+    Route::post('/scout-flush', [ApiController::class, 'scoutFlush']);
+    Route::post('/scout-import', [ApiController::class, 'scoutImport']);
+    Route::post('/link-optimize', [ApiController::class, 'linkOptimize']);
+    Route::post('/cache-clear', [ApiController::class, 'clearCache'])->name('clear.cache');
+});
 
 // Feed routes
 Route::get('/feed/catalog', [FeedController::class, 'catalog'])->name('feed.catalog');

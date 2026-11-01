@@ -842,6 +842,7 @@
             }
 
             const payload = {
+                _token: '{{ csrf_token() }}',
                 name: getFieldValue('[name="name"]'),
                 phone: phone,
                 address: getFieldValue('[name="address"]'),

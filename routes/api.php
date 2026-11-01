@@ -27,16 +27,25 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['as' => 'api.'], function (): void {
-    Route::get('products', ProductController::class)->name('products');
-    Route::get('images', [ImageController::class, 'index'])->name('images.index');
-    Route::get('images/single', [ImageController::class, 'single'])->name('images.single');
-    Route::get('images/multiple', [ImageController::class, 'multiple'])->name('images.multiple');
-    Route::post('menu/{menu}/sort-items', [MenuItemSortController::class])->name('menu-items.sort');
-    Route::get('orders', OrderController::class)->name('orders');
-    Route::get('orders/{order}/admin-notes', [OrderController::class, 'adminNotes'])->name('orders.admin-notes');
-    Route::get('purchases', PurchaseController::class)->name('purchases');
-    Route::get('purchases/products', [PurchaseController::class, 'getProducts'])->name('purchases.products');
-    Route::get('purchases/suppliers', [PurchaseController::class, 'getSuppliers'])->name('purchases.suppliers');
+    Route::middleware(['web', 'auth:admin'])->group(function (): void {
+        Route::get('products', ProductController::class)->name('products')->middleware('can:manage-admin-images');
+        Route::middleware('can:manage-admin-images')->group(function (): void {
+            Route::get('images', [ImageController::class, 'index'])->name('images.index');
+            Route::get('images/single', [ImageController::class, 'single'])->name('images.single');
+            Route::get('images/multiple', [ImageController::class, 'multiple'])->name('images.multiple');
+        });
+        Route::post('menu/{menu}/sort-items', [MenuItemSortController::class])->name('menu-items.sort')->middleware('can:manage-resellers');
+        Route::middleware('can:view-admin-orders')->group(function (): void {
+            Route::get('orders', OrderController::class)->name('orders');
+            Route::get('orders/{order}/admin-notes', [OrderController::class, 'adminNotes'])->name('orders.admin-notes');
+            Route::get('pending-count/{admin}', [ApiController::class, 'pendingCount']);
+        });
+        Route::middleware('can:view-admin-purchases')->group(function (): void {
+            Route::get('purchases', PurchaseController::class)->name('purchases');
+            Route::get('purchases/products', [PurchaseController::class, 'getProducts'])->name('purchases.products');
+            Route::get('purchases/suppliers', [PurchaseController::class, 'getSuppliers'])->name('purchases.suppliers');
+        });
+    });
 
     Route::get('shop', [App\Http\Controllers\ProductController::class, 'index']);
     Route::get('menus', [ApiController::class, 'menus']);
@@ -54,19 +63,20 @@ Route::group(['as' => 'api.'], function (): void {
     Route::get('categories/{slug}.json', [ApiController::class, 'category']);
     Route::get('products/{search}', [ApiController::class, 'products']);
     Route::get('settings', [ApiController::class, 'settings']);
-    Route::get('pending-count/{admin}', [ApiController::class, 'pendingCount']);
     Route::post('pathao-webhook', [ApiController::class, 'pathaoWebhook']);
     Route::post('steadfast-webhook', [ApiController::class, 'steadfastWebhook']);
     Route::post('redx-webhook', [ApiController::class, 'redxWebhook']);
     Route::post('checkout', LivewireCheckoutController::class);
-    Route::get('orders/{order}', [ApiController::class, 'order']);
+    Route::get('orders/{order}', [ApiController::class, 'order'])->middleware(['web', 'throttle:30,1'])->name('orders.show');
     Route::post('track-contact', ContactTrackingController::class)->name('track-contact');
     Route::post('track-add-to-cart', AddToCartTrackingController::class)->name('track-add-to-cart');
     Route::post('track-view-content', ViewContentTrackingController::class)->name('track-view-content');
-    Route::get('resellers', ResellerController::class)->name('resellers');
-    Route::put('resellers/{id}', [ResellerController::class, 'update'])->name('resellers.update');
-    Route::delete('resellers/{id}', [ResellerController::class, 'destroy'])->name('resellers.destroy');
-    Route::post('resellers/{id}/toggle-verify', [ResellerController::class, 'toggleVerify'])->name('resellers.toggle-verify');
+    Route::middleware(['web', 'auth:admin', 'can:manage-resellers'])->group(function (): void {
+        Route::get('resellers', ResellerController::class)->name('resellers');
+        Route::put('resellers/{id}', [ResellerController::class, 'update'])->name('resellers.update');
+        Route::delete('resellers/{id}', [ResellerController::class, 'destroy'])->name('resellers.destroy');
+        Route::post('resellers/{id}/toggle-verify', [ResellerController::class, 'toggleVerify'])->name('resellers.toggle-verify');
+    });
     Route::post('reseller/orders/place', [ResellerOrderController::class, 'placeOrder'])
         ->name('api.reseller.orders.place');
 

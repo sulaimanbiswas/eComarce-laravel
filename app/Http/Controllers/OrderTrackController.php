@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TrackOrderRequest;
 use App\Models\Order;
 use App\Notifications\User\OrderPlaced;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use App\Services\OrderAccessService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 use Spatie\GoogleTagManager\GoogleTagManagerFacade;
 
 class OrderTrackController extends Controller
 {
     /**
      * Handle the incoming request.
-     *
-     * @return Response
      */
-    public function __invoke(Request $request)
+    public function __invoke(TrackOrderRequest $request, OrderAccessService $orderAccess): View|RedirectResponse
     {
         if (! $request->has('order')) {
             return view('track-order');
         }
         $order = Order::where(['id' => $request->order])->first();
         if (! $order instanceof Order) {
-            return back()->withDanger('Invalid Tracking Info Or Order Record Was Deleted.');
+            abort(404);
         }
+
+        $orderAccess->authorize($request, $order);
 
         if ($request->is('thank-you') && GoogleTagManagerFacade::isEnabled()) {
             $index = 0;
@@ -56,7 +58,7 @@ class OrderTrackController extends Controller
             ]);
         }
 
-        if ($request->isMethod('GET')) {
+        if ($request->isMethod('GET') || ! in_array($request->input('action'), ['resend', 'confirm'], true)) {
             return view('order-status', compact('order'));
         }
 
@@ -73,7 +75,9 @@ class OrderTrackController extends Controller
             }
         }
         if ($request->get('action') === 'confirm') {
-            if (cacheMemo()->get('order:confirm:'.$order->id) == $request->get('code')) {
+            $expectedCode = cacheMemo()->get('order:confirm:'.$order->id);
+            $providedCode = $request->input('code');
+            if ($expectedCode !== null && is_string($providedCode) && $providedCode !== '' && hash_equals((string) $expectedCode, $providedCode)) {
                 $order->update(['status' => data_get(config('app.orders'), 0, 'PROCESSING')]);
 
                 return back()->withSuccess('Your order has been confirmed');
@@ -81,5 +85,7 @@ class OrderTrackController extends Controller
                 return back()->withDanger('Incorrect confirmation code');
             }
         }
+
+        return view('order-status', compact('order'));
     }
 }

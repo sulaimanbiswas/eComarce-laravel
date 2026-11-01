@@ -3,34 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ApiCheckoutRequest;
 use App\Http\Resources\ProductResource;
 use App\Livewire\Checkout;
-use App\Models\Product;
+use App\Services\OrderProductService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 
 class LivewireCheckoutController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(ApiCheckoutRequest $request, OrderProductService $orderProducts): JsonResponse
     {
-        if (! ($hidePrefix = setting('show_option')->hide_phone_prefix ?? false)) {
-            if (Str::startsWith($request->phone, '01')) {
-                $request->merge(['phone' => Str::after($request->phone, '0')]);
-            }
-        } elseif (Str::startsWith($request->phone, '01')) { // hide prefix
-            $request->merge(['phone' => '+88'.$request->phone]);
-        }
-
-        $data = $request->validate([
-            'name' => ['required'],
-            'phone' => $hidePrefix ? 'required|regex:/^\+8801\d{9}$/' : 'required|regex:/^1\d{9}$/',
-            'email' => ['nullable', 'email'],
-            'address' => ['required'],
-            'note' => ['nullable'],
-            'shipping' => ['required'],
-            'cart' => ['required', 'array'],
-        ]);
+        $data = $request->validated();
+        $items = $orderProducts->resolveItems($data['cart']);
 
         $livewire = new Checkout;
         $livewire->mount();
@@ -39,25 +26,25 @@ class LivewireCheckoutController extends Controller
         cart()->destroy();
 
         // Add items to cart
-        foreach ($data['cart'] as $item) {
-            if ($product = Product::find($item['id'])) {
-                $cartItem = (new ProductResource($product))->toCartItem($item['quantity']);
-                cart()->add([
-                    'id' => $cartItem['id'],
-                    'name' => $cartItem['name'],
-                    'qty' => $cartItem['quantity'],
-                    'price' => $cartItem['price'],
-                    'options' => [
-                        'purchase_price' => $cartItem['purchase_price'],
-                        'parent_id' => $cartItem['parent_id'],
-                        'slug' => $cartItem['slug'],
-                        'image' => $cartItem['image'],
-                        'category' => $cartItem['category'],
-                        'shipping_inside' => $cartItem['shipping_inside'],
-                        'shipping_outside' => $cartItem['shipping_outside'],
-                    ],
-                ]);
-            }
+        foreach ($items as $item) {
+            $cartItem = (new ProductResource($item['product']))->toCartItem($item['quantity']);
+            cart()->add([
+                'id' => $cartItem['id'],
+                'name' => $cartItem['name'],
+                'qty' => $cartItem['quantity'],
+                'price' => $cartItem['price'],
+                'options' => [
+                    'purchase_price' => $cartItem['purchase_price'],
+                    'parent_id' => $cartItem['parent_id'],
+                    'slug' => $cartItem['slug'],
+                    'image' => $cartItem['image'],
+                    'category' => $cartItem['category'],
+                    'shipping_inside' => $cartItem['shipping_inside'],
+                    'shipping_outside' => $cartItem['shipping_outside'],
+                    'max' => $orderProducts->maximumQuantity($item['product']),
+                    'retail_price' => $cartItem['retail_price'],
+                ],
+            ]);
         }
 
         $livewire->name = $request->input('name');
@@ -72,6 +59,10 @@ class LivewireCheckoutController extends Controller
             return response()->json(['message' => session('error')], 422);
         }
 
-        return response()->json(['message' => 'Order placed successfully.', 'order' => $livewire->order]);
+        if (! $livewire->order) {
+            throw ValidationException::withMessages(['cart' => 'The order could not be placed. Please review your cart.']);
+        }
+
+        return response()->json(['message' => 'Order placed successfully.', 'order' => $livewire->order, 'tracking_url' => URL::temporarySignedRoute('thank-you', now()->addDays(7), ['order' => $livewire->order->id])]);
     }
 }

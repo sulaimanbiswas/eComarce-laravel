@@ -13,6 +13,7 @@ use App\Notifications\User\AccountCreated;
 use App\Notifications\User\OrderPlaced;
 use App\Services\DeliveryAreaService;
 use App\Services\FacebookPixelService;
+use App\Services\OrderProductService;
 use App\Services\UtmTrackingService;
 use App\Traits\ResolvesPackagingCharge;
 use Azmolla\Shoppingcart\Facades\Cart;
@@ -246,6 +247,8 @@ class Checkout extends Component
             $qty = $item->qty + 1;
             $content = cart()->content();
             $product = Product::find($item->id);
+            throw_unless($product, ValidationException::withMessages(['products' => 'This product is no longer available.']));
+            app(OrderProductService::class)->validateQuantity($product, (int) cart()->content()->where('id', $product->id)->sum('qty') + 1);
             $item->price = $price = $product->getPrice($qty);
             if (! isOninda() || ! config('app.resell')) {
                 $item->options['retail_price'] = $price;
@@ -441,11 +444,16 @@ class Checkout extends Component
             return back()->with('error', 'প্রিয় গ্রাহক, আরও অর্ডার করতে চাইলে আমাদের হেল্প লাইন '.setting('company')->phone.' নাম্বারে কল দিয়ে সরাসরি কথা বলুন।');
         }
 
-        $this->order = DB::transaction(function () use ($data, &$order, $fraud) {
-            $data['products'] = Product::find(cart()->content()->pluck('id'))
-                ->mapWithKeys(function (Product $product) use ($fraud) {
+        $this->order = DB::transaction(function () use ($data, &$order) {
+            $checkoutProducts = Product::query()->with('parent')->whereIn('id', cart()->content()->pluck('id'))->lockForUpdate()->get();
+            if ($checkoutProducts->count() !== cart()->content()->pluck('id')->unique()->count()) {
+                throw ValidationException::withMessages(['products' => 'A product in your cart is no longer available.']);
+            }
+            $data['products'] = $checkoutProducts
+                ->mapWithKeys(function (Product $product) {
                     $id = $product->id;
-                    $quantity = min(cart($id)->qty, $fraud->max_qty_per_product ?? 3);
+                    $quantity = (int) cart()->content()->where('id', $id)->sum('qty');
+                    app(OrderProductService::class)->validateQuantity($product, $quantity);
 
                     if ($quantity <= 0) {
                         return null;
@@ -611,6 +619,7 @@ class Checkout extends Component
             session(['kart' => 'default']);
         }
         session()->flash('completed', 'Dear '.$data['name'].', Your Order is Successfully Received. Thanks For Your Order.');
+        session()->put('orders.authorized.'.$this->order->id, true);
 
         return to_route($this->getRedirectRoute(), [
             'order' => $this->order?->getKey(),

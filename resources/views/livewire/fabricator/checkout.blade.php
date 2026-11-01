@@ -861,6 +861,7 @@ $selectedOptionIds = $selectedProduct->options->pluck('id')->toArray();
                 navigator.sendBeacon(
                     "/save-checkout-progress",
                     new Blob([JSON.stringify({
+                        _token: '{{ csrf_token() }}',
                         name: firstNameEl.value,
                         phone: phoneEl.value,
                         address: addressEl.value,

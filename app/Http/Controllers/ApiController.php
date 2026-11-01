@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 
@@ -27,6 +28,8 @@ class ApiController extends Controller
             }
         }
 
+        unset($data['_token']);
+
         foreach ($data as $field => $value) {
             longCookie($field, $value);
         }
@@ -43,12 +46,12 @@ class ApiController extends Controller
 
     public function scoutFlush()
     {
-        return Artisan::call('scout:flush', ['model' => "App\Product"]);
+        return Artisan::call('scout:flush', ['model' => Product::class]);
     }
 
     public function scoutImport()
     {
-        return Artisan::call('scout:import', ['model' => "App\Product"]);
+        return Artisan::call('scout:import', ['model' => Product::class]);
     }
 
     public function linkOptimize(): void
@@ -62,7 +65,7 @@ class ApiController extends Controller
         Artisan::call('optimize:clear');
 
         // Only clear response cache if it's enabled
-        if (config('cache.response_cache.enabled', false)) {
+        if (config('responsecache.enabled', false)) {
             try {
                 Artisan::call('responsecache:clear');
             } catch (\Exception) {

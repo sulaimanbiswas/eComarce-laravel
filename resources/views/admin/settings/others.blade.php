@@ -50,7 +50,7 @@
             <div class="ml-2 d-flex">
                 <div class="mr-3 radio radio-secondary">
                     <input type="radio" id="product-grid-add-to-cart" name="show_option[product_grid_button]"
-                        value="add_to_cart" @if (old('show_option.product_grid_button', $show_option->product_grid_button ?? false) == 'add_to_cart') checked @endif />
+                        value="add_to_cart" @if (old('show_option.product_grid_button', $show_option->product_grid_button ?? 'add_to_cart') == 'add_to_cart') checked @endif />
                     <label for="product-grid-add-to-cart">`Add To Cart`</label>
                 </div>
                 <div class="ml-3 radio radio-secondary">

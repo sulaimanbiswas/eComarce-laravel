@@ -89,8 +89,8 @@ class OrderController extends Controller
                 ]);
         }
 
-        $orders = $orders->when($request->role_id == Admin::SALESMAN, function ($orders): void {
-            $orders->where('orders.admin_id', request('admin_id'));
+        $orders = $orders->when($request->user('admin')->is('salesman'), function ($orders) use ($request): void {
+            $orders->where('orders.admin_id', $request->user('admin')->id);
         });
         $orders = $orders->when(! $request->has('order'), function ($orders): void {
             $orders->latest('orders.id');
@@ -385,6 +385,8 @@ class OrderController extends Controller
 
     public function adminNotes(Order $order): JsonResponse
     {
+        abort_if(auth('admin')->user()->is('salesman') && (int) $order->admin_id !== (int) auth('admin')->id(), 403);
+
         $orderNotes = $order->orderNotes()->with('admin')->latest()->get();
         $lastIndex = $orderNotes->count() - 1;
 

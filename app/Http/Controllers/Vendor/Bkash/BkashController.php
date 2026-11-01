@@ -1,6 +1,6 @@
 <?php
 
-namespace Ihasan\Bkash\Http\Controllers;
+namespace App\Http\Controllers\Vendor\Bkash;
 
 use Ihasan\Bkash\Facades\Bkash;
 use Ihasan\Bkash\Models\BkashPayment;
@@ -13,10 +13,8 @@ class BkashController extends Controller
 {
     /**
      * Handle the callback from bKash
-     *
-     * @return RedirectResponse
      */
-    public function callback(Request $request)
+    public function callback(Request $request): RedirectResponse
     {
         $paymentId = $request->input('paymentID');
         $status = $request->input('status');
@@ -62,10 +60,8 @@ class BkashController extends Controller
 
     /**
      * Display success page
-     *
-     * @return View
      */
-    public function success(Request $request)
+    public function success(Request $request): View
     {
         $payment = $request->session()->get('payment');
 
@@ -74,10 +70,8 @@ class BkashController extends Controller
 
     /**
      * Display failed page
-     *
-     * @return View
      */
-    public function failed(Request $request)
+    public function failed(Request $request): View
     {
         $error = $request->session()->get('error');
         $paymentId = $request->session()->get('payment_id');

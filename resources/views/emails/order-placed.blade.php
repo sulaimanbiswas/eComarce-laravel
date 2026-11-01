@@ -3,7 +3,7 @@
 
 Your order has been successfully placed.
 
-@component('mail::button', ['url' => route('track-order', ['order' => $order->id, 'phone' => $order->phone])])
+@component('mail::button', ['url' => \Illuminate\Support\Facades\URL::temporarySignedRoute('track-order', now()->addDays(7), ['order' => $order->id])])
 View Order #{{ $order->id }}
 @endcomponent
 

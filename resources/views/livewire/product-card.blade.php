@@ -1,3 +1,12 @@
+@php
+    $show_option = setting('show_option');
+    $productGridButton = $show_option->product_grid_button ?? 'add_to_cart';
+    $productGridButton = in_array($productGridButton, ['add_to_cart', 'order_now', 'none'], true) ? $productGridButton : 'add_to_cart';
+    $addToCartIcon = ! empty(trim($show_option->add_to_cart_icon ?? '')) ? $show_option->add_to_cart_icon : '<i class="fas fa-shopping-cart"></i>';
+    $addToCartText = ! empty(trim($show_option->add_to_cart_text ?? '')) ? $show_option->add_to_cart_text : 'Add To Cart';
+    $orderNowIcon = ! empty(trim($show_option->order_now_icon ?? '')) ? $show_option->order_now_icon : '<i class="fas fa-shopping-cart"></i>';
+    $orderNowText = ! empty(trim($show_option->order_now_text ?? '')) ? $show_option->order_now_text : 'Buy Now';
+@endphp
 @if (isGbazTheme())
     @php
         $show_option = setting('show_option');
@@ -10,10 +19,6 @@
             isOninda() &&
             ! $guest_can_see_price &&
             (auth('user')->guest() || (auth('user')->check() && ! auth('user')->user()->is_verified));
-        $addToCartIcon = ! empty(trim($show_option->add_to_cart_icon ?? '')) ? $show_option->add_to_cart_icon : '<i class="fas fa-shopping-cart"></i>';
-        $addToCartText = ! empty(trim($show_option->add_to_cart_text ?? '')) ? $show_option->add_to_cart_text : 'Add To Cart';
-        $orderNowIcon = ! empty(trim($show_option->order_now_icon ?? '')) ? $show_option->order_now_icon : '<i class="fas fa-shopping-cart"></i>';
-        $orderNowText = ! empty(trim($show_option->order_now_text ?? '')) ? $show_option->order_now_text : 'Add To Cart';
     @endphp
     <div class="product-card" data-id="{{ $product->id }}" data-max="-1">
         <div class="product-card__badges-list">
@@ -72,9 +77,11 @@
             </div>
             @if (!isOninda())
                 <div class="product-card__buttons">
-                    @php($available = true)
-                    @php($has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1)
-                    @if (($show_option->product_grid_button ?? 'add_to_cart') == 'add_to_cart')
+                    @php
+                        $available = true;
+                        $has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1;
+                    @endphp
+                    @if ($productGridButton == 'add_to_cart')
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn product-card__addtocart" style="text-decoration: none;">
                                 {!! $addToCartIcon !!}
@@ -87,7 +94,7 @@
                                 <span>{{ $addToCartText }}</span>
                             </button>
                         @endif
-                    @elseif (($show_option->product_grid_button ?? false) == 'order_now')
+                    @elseif ($productGridButton == 'order_now')
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn product-card__ordernow" style="text-decoration: none;">
                                 {!! $orderNowIcon !!}
@@ -233,33 +240,35 @@
             </div>
             @if (!isOninda())
                 <div class="product-card__buttons">
-                    @php($available = true)
-                    @php($has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1)
-                    @if (($show_option->product_grid_button ?? false) == 'add_to_cart')
+                    @php
+                        $available = true;
+                        $has_variations = ($product->relationLoaded('variations') ? $product->variations->count() : ($product->variations_count ?? 0)) > 1;
+                    @endphp
+                    @if ($productGridButton == 'add_to_cart')
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn btn-primary product-card__addtocart" style="text-decoration: none;">
-                                {!! $show_option->add_to_cart_icon ?? null !!}
-                                <span class="ml-1">{{ $show_option->add_to_cart_text ?? '' }}</span>
+                                {!! $addToCartIcon !!}
+                                <span class="ml-1">{{ $addToCartText }}</span>
                             </a>
                         @else
                             <button wire:click="addToCart" class="btn btn-primary product-card__addtocart" type="button"
                                 {{ $available ? '' : 'disabled' }}>
-                                {!! $show_option->add_to_cart_icon ?? null !!}
-                                <span class="ml-1">{{ $show_option->add_to_cart_text ?? '' }}</span>
+                                {!! $addToCartIcon !!}
+                                <span class="ml-1">{{ $addToCartText }}</span>
                             </button>
                         @endif
                     @endif
-                    @if (($show_option->product_grid_button ?? false) == 'order_now')
+                    @if ($productGridButton == 'order_now')
                         @if ($has_variations)
                             <a href="{{ route('products.show', $product) }}" wire:navigate.hover class="btn btn-primary product-card__ordernow" style="text-decoration: none;">
-                                {!! $show_option->order_now_icon ?? null !!}
-                                <span class="ml-1">{{ $show_option->order_now_text ?? '' }}</span>
+                                {!! $orderNowIcon !!}
+                                <span class="ml-1">{{ $orderNowText }}</span>
                             </a>
                         @else
                             <button wire:click="addToCart('kart')" class="btn btn-primary product-card__ordernow" type="button"
                                 {{ $available ? '' : 'disabled' }}>
-                                {!! $show_option->order_now_icon ?? null !!}
-                                <span class="ml-1">{{ $show_option->order_now_text ?? '' }}</span>
+                                {!! $orderNowIcon !!}
+                                <span class="ml-1">{{ $orderNowText }}</span>
                             </button>
                         @endif
                     @endif

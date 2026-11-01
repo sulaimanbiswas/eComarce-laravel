@@ -1,4 +1,4 @@
-@if ($show_option->customer_login)
+@if ($show_option->customer_login ?? false)
 <div class="ml-2 indicator">
     <a href="{{ isOninda() ? route('reseller.dashboard') : route('admin.login') }}" class="indicator__button" aria-label="Account">
         <span class="indicator__area">

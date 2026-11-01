@@ -90,8 +90,8 @@ Route::group(['as' => 'admin.'], function (): void {
 
         Route::get('resellers', [ResellerController::class, 'index'])->name('resellers.index');
         Route::get('resellers/{reseller}/affiliate', [ResellerController::class, 'affiliate'])->name('resellers.affiliate');
-        Route::get('resellers/{reseller}/edit', [ResellerController::class, 'edit'])->name('resellers.edit');
-        Route::put('resellers/{reseller}', [ResellerController::class, 'update'])->name('resellers.update');
+        Route::get('resellers/{reseller}/edit', [ResellerController::class, 'edit'])->name('resellers.edit')->middleware('can:manage-resellers');
+        Route::put('resellers/{reseller}', [ResellerController::class, 'update'])->name('resellers.update')->middleware('can:manage-resellers');
 
         // Money Requests Routes
         Route::get('money-requests', [MoneyRequestController::class, 'index'])->name('money-requests.index');

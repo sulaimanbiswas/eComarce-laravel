@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Extensions\DatabaseSessionHandler;
+use App\Models\Admin;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\HomeSection;
@@ -20,6 +21,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
@@ -43,6 +45,11 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         Paginator::useBootstrap();
+
+        Gate::define('manage-resellers', fn (Admin $admin): bool => $admin->is_active && $admin->is('admin'));
+        Gate::define('view-admin-orders', fn (Admin $admin): bool => $admin->is_active && $admin->is(['admin', 'manager', 'salesman']));
+        Gate::define('view-admin-purchases', fn (Admin $admin): bool => $admin->is_active && $admin->is(['admin', 'manager']));
+        Gate::define('manage-admin-images', fn (Admin $admin): bool => $admin->is_active && $admin->is(['admin', 'manager', 'salesman', 'uploader']));
 
         Session::extend('custom', function ($app) {
             $table = $app['config']['session.table'];

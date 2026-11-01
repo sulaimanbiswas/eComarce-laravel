@@ -216,7 +216,7 @@ class GenerateSitemap extends Command
         $flushCurrent();
     }
 
-    private function generateBlogSitemaps(string $publicSitemapsDir, SitemapIndex $index)
+    private function generateBlogSitemaps(string $publicSitemapsDir, SitemapIndex $index): void
     {
         if (! Schema::hasTable((new Blog)->getTable())) {
             return;

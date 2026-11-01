@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\User\OrderPlaced;
 use App\Services\FacebookPixelService;
 use App\Services\LandingPageProTemplateRegistry;
+use App\Services\OrderProductService;
 use App\Services\UtmTrackingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -363,6 +365,7 @@ class LandingPageProController extends Controller
             ->values();
 
         $products = Product::query()
+            ->with('parent')
             ->whereIn('id', $requestedProductIds->all())
             ->get()
             ->keyBy('id');
@@ -384,9 +387,8 @@ class LandingPageProController extends Controller
                 continue;
             }
 
-            $fraudQuantity = setting('fraud')->max_qty_per_product ?? 3;
-            $maxQuantity = (int) $fraudQuantity;
-            $quantity = min((int) $requestedQuantity, $maxQuantity);
+            $quantity = ($productsPayload[$product->id]['quantity'] ?? 0) + $requestedQuantity;
+            app(OrderProductService::class)->validateQuantity($product, $quantity, 'items');
 
             if ($quantity <= 0) {
                 continue;
@@ -530,7 +532,7 @@ class LandingPageProController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect_url' => route('thank-you', ['order' => $order->id]),
+            'redirect_url' => URL::temporarySignedRoute('thank-you', now()->addDays(7), ['order' => $order->id]),
         ]);
     }
 

@@ -563,10 +563,15 @@
                     </li>
 
                     <li>
-                        <a class="nav-link menu-title link-nav" href="{{ route('clear.cache') }}">
-                            <i data-feather="refresh-cw"> </i>
-                            <span>Cache Clear</span>
-                        </a>
+                        @can('manage-resellers')
+                            <form action="{{ route('clear.cache') }}" method="post">
+                                @csrf
+                                <button type="submit" class="nav-link menu-title link-nav border-0 bg-transparent">
+                                    <i data-feather="refresh-cw"> </i>
+                                    <span>Cache Clear</span>
+                                </button>
+                            </form>
+                        @endcan
                     </li>
                 </ul>
             </div>

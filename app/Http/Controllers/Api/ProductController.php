@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,7 +18,7 @@ class ProductController extends Controller
      */
     public function __invoke(Request $request)
     {
-        $admin = Admin::find($request->admin_id);
+        $admin = $request->user('admin');
         $select = [
             'products.*',
             DB::raw('COALESCE((SELECT NULLIF(SUM(v.stock_count), 0) FROM products v WHERE v.parent_id = products.id), products.stock_count) as stock'),

@@ -227,6 +227,8 @@ final class ResellerController extends Controller
             return back()->withDanger('Invalid Tracking Info Or Order Record Was Deleted.');
         }
 
+        abort_unless((int) $order->user_id === (int) $request->user('user')->id, 404);
+
         return view('reseller.thank-you', compact('order'));
     }
 

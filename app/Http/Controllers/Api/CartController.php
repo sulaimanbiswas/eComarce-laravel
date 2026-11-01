@@ -3,21 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AddCartItemRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\OrderProductService;
 use Azmolla\Shoppingcart\Facades\Cart;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
-    public function add(Request $request)
+    public function add(AddCartItemRequest $request, OrderProductService $orderProducts): JsonResponse
     {
-        $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'quantity' => ['integer', 'min:1', 'max:10'],
-            'instance' => ['string', 'in:default,kart,landing'],
-        ]);
-
         $product = Product::with('parent')->findOrFail($request->product_id);
         if (! ($product->parent ?? $product)->is_active) {
             return response()->json([
@@ -28,6 +26,8 @@ class CartController extends Controller
 
         $quantity = $request->quantity ?? 1;
         $instance = $request->instance ?? 'default';
+        $existingQuantity = in_array($instance, ['kart', 'landing'], true) ? 0 : (int) cart()->instance($instance)->content()->where('id', $product->id)->sum('qty');
+        $orderProducts->validateQuantity($product, $existingQuantity + (int) $quantity, 'quantity');
 
         try {
             // Follow the HasCart trait logic but avoid problematic services
@@ -36,9 +36,7 @@ class CartController extends Controller
                 Cart::instance($instance)->destroy();
             }
 
-            $fraudQuantity = setting('fraud')->max_qty_per_product ?? 3;
-            $maxQuantity = (int) $fraudQuantity;
-            $quantity = min($quantity, $maxQuantity);
+            $maxQuantity = $orderProducts->maximumQuantity($product);
 
             // Use ProductResource to get proper cart item data
             $productData = (new ProductResource($product))->toCartItem($quantity);
@@ -68,6 +66,8 @@ class CartController extends Controller
                 ],
                 'instance' => $instance,
             ]);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
