@@ -657,7 +657,7 @@
                         <livewire:product-detail :product="$product" :show-brand-category="!($services->enabled ?? false)" />
                         <!-- .product__info / end -->
                         @if ($services->enabled ?? false)
-                            <div>
+                            <div class="product-detail__aside">
                                 @if ($product->variations->isNotEmpty())
                                     <div class="p-3 mt-2 mb-2 border product__footer">
                                         <div class="product__tags tags">

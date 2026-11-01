@@ -1,6 +1,7 @@
 <style>
     .storefront-hero, .featured-categories { --hero-accent: {{ $color->primary->background_color ?? '#1c4435' }}; --hero-gutter: clamp(20px, 3vw, 48px); background: #fbf9f5; }
     .storefront-hero { padding: 24px 0 0; }
+    .mobile-hero-promotion { display: none; }
     .storefront-hero__container { max-width: 1536px; padding: 0 var(--hero-gutter); margin: 0 auto; }
     .storefront-hero__grid { display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
     .storefront-hero__grid--single { grid-template-columns: minmax(0, 1fr); }
@@ -78,6 +79,8 @@
         .storefront-hero__eyebrow { font-size: 10px; margin-bottom: 8px; }
     }
     @media (max-width: 767px) {
+        .storefront-hero__grid .storefront-hero__promotion--desktop { display: none; }
+        .mobile-hero-promotion { display: block; padding: 16px 0; background: #fbf9f5; --hero-gutter: 16px; }
         .storefront-hero, .featured-categories { --hero-gutter: 16px; }
         .storefront-hero { padding-top: 16px; }
         .storefront-hero__grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }

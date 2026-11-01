@@ -29,7 +29,7 @@
         .product-section--horizontal { --section-columns: 2 !important; }
     }
     @media (max-width: 767px) {
-        .product-section { --section-columns: 2 !important; }.product-section__grid { gap: 12px; }
+        .product-section[data-columns] { --section-columns: 2 !important; }.product-section__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .product-section--horizontal .showcase-card { display: flex; min-height: 0; }.product-section--horizontal .showcase-card__media { aspect-ratio: 1; height: auto; }.product-section--horizontal .showcase-card__body { padding: 12px; }
         .product-section--horizontal .showcase-card__name { font-size: 13px; }.product-section--horizontal .showcase-card__price { font-size: 16px; }
         .product-section__filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; gap: 8px; }.product-section__filter { flex-shrink: 0; }

@@ -1,9 +1,6 @@
 @php
     $heroSlides = slides();
-    $heroCategory = categories()->first();
     $showHeroBanner = $company->hero_banner_enabled ?? true;
-    $heroBannerLink = $company->hero_banner_link ?? null;
-    $heroBannerLink = filled($heroBannerLink) ? $heroBannerLink : ($heroCategory ? route('categories.products', $heroCategory->slug) : route('products.index'));
 @endphp
 
 @push('head')
@@ -59,24 +56,7 @@
                 @endif
             </div>
 
-            @if ($showHeroBanner)
-                <a class="storefront-hero__promotion" href="{{ $heroBannerLink }}" aria-label="{{ $company->hero_banner_alt ?? 'Explore our featured collection' }}">
-                    @if (!empty($logo->hero_banner))
-                        <img src="{{ asset($logo->hero_banner) }}" alt="{{ $company->hero_banner_alt ?? 'Featured store promotion' }}" width="600" height="490" loading="eager" decoding="async">
-                    @else
-                        <div class="storefront-hero__promotion-copy">
-                            <span class="storefront-hero__eyebrow">Discover something new</span>
-                            <h2>{{ $heroCategory->name ?? 'Made for your everyday.' }}</h2>
-                            <span class="storefront-hero__promotion-link">Explore collection <span aria-hidden="true">&rarr;</span></span>
-                        </div>
-                        @if (!empty($heroCategory->image_id))
-                            <img class="storefront-hero__category-art" src="{{ asset($heroCategory->image_src) }}" alt="" width="240" height="240" decoding="async">
-                        @else
-                            <span class="storefront-hero__promotion-orbit" aria-hidden="true"></span>
-                        @endif
-                    @endif
-                </a>
-            @endif
+            @include('partials.hero-promotion', ['mobilePromotion' => false])
         </div>
     </div>
 </section>

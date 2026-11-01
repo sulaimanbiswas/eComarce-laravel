@@ -1,16 +1,96 @@
 <script>
     if (!window.__storefrontHeaderEventsBound) {
         window.__storefrontHeaderEventsBound = true;
+        let headerScrollFrame = 0;
+        let headerAnimationFrame = 0;
+        let lastHeaderScrollY = Math.max(0, window.scrollY);
+        let headerScrollDistance = 0;
+        let headerScrollDirection = 0;
+        let observedHeader = null;
         const updateStorefrontHeaderLayout = function() {
             const header = document.querySelector('.storefront-header');
             if (!header) {
                 return;
             }
+            const main = header.querySelector('.storefront-header__main');
+            header.style.setProperty('--storefront-header-main-height', (main?.offsetHeight ?? 0) + 'px');
+            header.style.setProperty('--storefront-header-top-gap', getComputedStyle(header).paddingTop);
             header.style.setProperty('--storefront-header-bottom', header.getBoundingClientRect().bottom + 'px');
         };
-        window.addEventListener('resize', updateStorefrontHeaderLayout);
-        document.addEventListener('livewire:navigated', updateStorefrontHeaderLayout);
-        updateStorefrontHeaderLayout();
+        const setHeaderScrollState = function(header, compact) {
+            const state = compact ? 'compact' : 'expanded';
+            if (header.dataset.scrollState !== state) {
+                header.dataset.scrollState = state;
+                cancelAnimationFrame(headerAnimationFrame);
+                const started = performance.now();
+                const followHeader = function(now) {
+                    updateStorefrontHeaderLayout();
+                    if (now - started < 400) {
+                        headerAnimationFrame = requestAnimationFrame(followHeader);
+                    }
+                };
+                headerAnimationFrame = requestAnimationFrame(followHeader);
+            }
+        };
+        const headerResizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(updateStorefrontHeaderLayout) : null;
+        const initializeHeaderScroll = function() {
+            const header = document.querySelector('.storefront-header');
+            if (header !== observedHeader) {
+                headerResizeObserver?.disconnect();
+                observedHeader = header;
+                if (header) {
+                    headerResizeObserver?.observe(header);
+                }
+            }
+            lastHeaderScrollY = Math.max(0, window.scrollY);
+            headerScrollDistance = 0;
+            headerScrollDirection = 0;
+            if (header) {
+                setHeaderScrollState(header, false);
+            }
+            updateStorefrontHeaderLayout();
+        };
+        window.addEventListener('scroll', function() {
+            if (headerScrollFrame) {
+                return;
+            }
+            headerScrollFrame = requestAnimationFrame(function() {
+                headerScrollFrame = 0;
+                const header = document.querySelector('.storefront-header');
+                const scrollY = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
+                const delta = scrollY - lastHeaderScrollY;
+                lastHeaderScrollY = scrollY;
+                if (!header) {
+                    return;
+                }
+                const direction = Math.sign(delta);
+                if (direction && direction !== headerScrollDirection) {
+                    headerScrollDistance = 0;
+                    headerScrollDirection = direction;
+                }
+                headerScrollDistance += Math.abs(delta);
+                const focusedElement = document.activeElement;
+                const interacting = header.querySelector('details[open]') || (header.contains(focusedElement) && focusedElement.matches('input, textarea, select, :focus-visible'));
+                if (!window.matchMedia('(min-width: 1024px)').matches || scrollY < header.offsetHeight + 24 || interacting) {
+                    setHeaderScrollState(header, false);
+                } else if (direction < 0 && headerScrollDistance >= 6) {
+                    setHeaderScrollState(header, false);
+                } else if (direction > 0 && headerScrollDistance >= 20) {
+                    setHeaderScrollState(header, true);
+                }
+                updateStorefrontHeaderLayout();
+            });
+        }, { passive: true });
+        document.addEventListener('focusin', function(event) {
+            const header = event.target.closest('.storefront-header');
+            if (header) {
+                setHeaderScrollState(header, false);
+            }
+        });
+        window.addEventListener('resize', initializeHeaderScroll);
+        window.addEventListener('pageshow', initializeHeaderScroll);
+        document.addEventListener('livewire:navigated', initializeHeaderScroll);
+        initializeHeaderScroll();
         document.addEventListener('click', function(event) {
             const searchToggle = event.target.closest('[data-storefront-search-toggle]');
             if (searchToggle) {

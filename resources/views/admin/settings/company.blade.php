@@ -1,4 +1,5 @@
 <div class="tab-pane active" id="item-1" role="tabpanel">
+    @include('admin.settings.storefront-appearance')
     <div class="row">
         <div class="col-sm-12">
             <h4><small class="mb-1 border-bottom">Logo</small></h4>
@@ -155,6 +156,20 @@
 </div>
 
 @include('admin.settings.social')
+
+<div class="card mt-3">
+    <div class="card-header p-3">Footer Support Section</div>
+    <div class="card-body p-3">
+        <div class="form-group">
+            <input type="hidden" name="company[footer_support_enabled]" value="0">
+            <input type="checkbox" id="footer-support-enabled" name="company[footer_support_enabled]" value="1" @checked(old('company.footer_support_enabled', $company->footer_support_enabled ?? true))>
+            <label for="footer-support-enabled">Show the footer support strip</label>
+        </div>
+        <div class="form-group"><label for="footer-support-heading">Support heading</label><input class="form-control" id="footer-support-heading" name="company[footer_support_heading]" maxlength="120" value="{{ old('company.footer_support_heading', $company->footer_support_heading ?? '') }}" placeholder="Let's make shopping simple."><x-error field="company.footer_support_heading" /></div>
+        <div class="form-group"><label for="footer-support-text">Support description</label><input class="form-control" id="footer-support-text" name="company[footer_support_text]" maxlength="255" value="{{ old('company.footer_support_text', $company->footer_support_text ?? '') }}" placeholder="Questions about a product, your order or delivery? Get in touch."><x-error field="company.footer_support_text" /></div>
+        <small class="text-muted">The footer uses your company logo, contact details and social links. Colors are in Color Settings → Footer; helpful links are managed in the Quick Links menu.</small>
+    </div>
+</div>
 
 <div class="card mt-3">
     <div class="card-header p-3">Homepage Hero Banner</div>

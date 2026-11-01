@@ -180,9 +180,16 @@
 @if ($show_option->brand_carousel ?? false)
     <div class="container">@include('partials.section-heading', ['headingSection' => null, 'headingTitle' => 'Brands', 'headingId' => 'featured-brands-title', 'headingUrl' => route('brands'), 'headingPosition' => 'bottom'])</div>
 @endif
+@php
+    $mobileBannerSections = sections()->filter(fn ($candidate) => in_array($candidate->type, ['pure-grid', 'carousel-grid']) && ($candidate->data->section_enabled ?? true) && $candidate->storefrontLayout() !== 'all-products');
+    $mobileHeroBannerSectionId = ($mobileBannerSections->first(fn ($candidate) => $candidate->storefrontLayout() === 'showcase') ?? $mobileBannerSections->first())?->id;
+@endphp
 @foreach(sections() as $section)
 @if (($section->data->layout ?? '') === 'all-products' || !($section->data->section_enabled ?? true)) @continue @endif
 @if(in_array($section->type, ['pure-grid', 'carousel-grid']))
+    @if (($company->hero_banner_enabled ?? true) && $section->id === $mobileHeroBannerSectionId)
+        <div class="mobile-hero-promotion"><div class="storefront-hero__container">@include('partials.hero-promotion', ['mobilePromotion' => true])</div></div>
+    @endif
     @include('partials.products.best-selling', ['section' => $section, 'products' => $section->products()])
 @elseif($section->type == 'banner')
     @include('partials.promotion-banners', ['section' => $section])

@@ -171,16 +171,16 @@
         color: {{ $color->section->text_hover ?? null }} !important;
     }
 
-    .site-footer {
+    .site-footer:not(.modern-footer) {
         background: {{ $color->footer->background_color ?? null }} !important;
         color: {{ $color->footer->text_color ?? null }} !important;
     }
 
-    .site-footer:hover {
+    .site-footer:not(.modern-footer):hover {
         background: {{ $color->footer->background_hover ?? null }} !important;
     }
 
-    .site-footer li:hover {
+    .site-footer:not(.modern-footer) li:hover {
         color: {{ $color->footer->text_hover ?? null }} !important;
     }
 

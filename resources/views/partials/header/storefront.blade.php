@@ -1,8 +1,9 @@
 @php
     $accountIsSignedIn = auth('admin')->check() || auth('user')->check();
     $accountUrl = isOninda() ? route('reseller.dashboard') : route('admin.login');
+    $headerVariant = array_key_exists($company->header_variant ?? '', config('storefront.header_variants')) ? $company->header_variant : 'signature';
 @endphp
-<header class="site__header storefront-header" aria-label="Store header" data-search-open="{{ request()->filled('search') ? 'true' : 'false' }}">
+<header class="site__header storefront-header storefront-header--{{ $headerVariant }}" aria-label="Store header" data-search-open="{{ request()->filled('search') ? 'true' : 'false' }}">
     <div class="storefront-header__main">
         <div class="storefront-header__inner">
             <a class="storefront-header__logo" href="{{ url('/') }}" wire:navigate.hover aria-label="{{ $company->name ?? config('app.name') }} home">

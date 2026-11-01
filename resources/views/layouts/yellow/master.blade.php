@@ -873,9 +873,11 @@
     {!! $scripts ?? null !!}
     @stack('head')
     @include('partials.header.styles')
+    @include('partials.footer-styles')
+    @include('partials.responsive-styles')
 </head>
 
-<body class="header-fixed" style="margin: 0; padding: 0;">
+<body id="store-top" class="header-fixed" style="margin: 0; padding: 0;">
     <x-livewire-progress bar-class="bg-warning" track-class="bg-white/50" />
     {{-- Analytics scripts loaded immediately for detection during setup --}}
     @php

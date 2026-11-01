@@ -1,6 +1,16 @@
 <?php
 
 return [
+    'header_variants' => [
+        'signature' => ['name' => 'Signature', 'description' => 'Balanced storefront with a wide search and category bar.'],
+        'studio' => ['name' => 'Studio', 'description' => 'Centered brand, rounded search and spacious navigation.'],
+        'floating' => ['name' => 'Floating', 'description' => 'Inset rounded header with a compact, elevated finish.'],
+    ],
+    'footer_variants' => [
+        'signature' => ['name' => 'Signature', 'description' => 'Full-width support strip and a balanced four-column footer.'],
+        'studio' => ['name' => 'Studio', 'description' => 'Centered brand introduction with an editorial link layout.'],
+        'floating' => ['name' => 'Floating', 'description' => 'Rounded support panel and softly outlined information cards.'],
+    ],
     'heading_variants' => [
         'split' => 'Title left / View All right',
         'centered' => 'Centered title / View All right',

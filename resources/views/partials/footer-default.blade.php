@@ -1,109 +1,90 @@
-<footer class="site__footer">
-    <div class="site-footer">
-        <div class="container">
-            <div class="site-footer__widgets">
-                <div class="row justify-content-between">
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="site-footer__widget footer-contacts">
-                            <h5 class="footer-contacts__title">{{ $company->name ?? '' }}</h5>
-                            <div class="footer-contacts__text">{{ $company->tagline ?? '' }}</div>
-                            <ul class="footer-contacts__contacts">
-                                <li><i class="footer-contacts__icon fas fa-globe-americas"></i> {{ $company->address ??
-                                    '' }}</li>
-                                <li><i class="footer-contacts__icon far fa-envelope"></i> {{ $company->email ?? '' }}
-                                </li>
-                                <li><i class="footer-contacts__icon fas fa-mobile-alt"></i> {{ $company->phone ?? '' }}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    @if($menuItems->isNotEmpty())
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="site-footer__widget footer-links">
-                            <h5 class="footer-links__title">Quick Links</h5>
-                            <ul class="footer-links__list">
-                                @foreach($menuItems as $item)
-                                @php
-                                    $rawHref = $item->href;
-                                    $isExternal = \Illuminate\Support\Str::startsWith($rawHref, ['http://', 'https://', 'mailto:', 'tel:', '#']);
-                                    $href = $isExternal ? $rawHref : url($rawHref);
-                                @endphp
-                                <li class="footer-links__item">
-                                    <a href="{{ $href }}" class="footer-links__link" @unless($isExternal) wire:navigate.hover @endunless>{{ $item->name }}</a>
-                                </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
+@php
+    $footerName = $company->name ?? config('app.name');
+    $footerPhone = $company->phone ?? '';
+    $footerEmail = $company->email ?? '';
+    $footerVariant = array_key_exists($company->footer_variant ?? '', config('storefront.footer_variants')) ? $company->footer_variant : 'signature';
+    $footerWhatsapp = preg_replace('/\D/', '', $company->whatsapp ?? '');
+    if (strlen($footerWhatsapp) === 11 && str_starts_with($footerWhatsapp, '01')) {
+        $footerWhatsapp = '88'.$footerWhatsapp;
+    }
+@endphp
+<footer class="site__footer modern-footer modern-footer--{{ $footerVariant }}" aria-label="Store information">
+    <div class="modern-footer__container">
+        @if (($company->footer_support_enabled ?? true) && (filled($footerPhone) || filled($footerEmail)))
+            <div class="modern-footer__support">
+                <div class="modern-footer__support-copy">
+                    <span class="modern-footer__eyebrow">WE'RE HERE TO HELP</span>
+                    <h2>{{ ($company->footer_support_heading ?? null) ?: "Let's make shopping simple." }}</h2>
+                    <p>{{ ($company->footer_support_text ?? null) ?: 'Questions about a product, your order or delivery? Get in touch.' }}</p>
+                </div>
+                <div class="modern-footer__support-actions">
+                    @if (filled($footerPhone))
+                        <a class="modern-footer__contact-button" href="tel:{{ $footerPhone }}" data-contact-type="tel">@include('partials.footer-icon', ['icon' => 'phone'])<span>{{ $footerPhone }}</span></a>
+                    @else
+                        <a class="modern-footer__contact-button" href="mailto:{{ $footerEmail }}">@include('partials.footer-icon', ['icon' => 'mail'])<span>Email us</span></a>
                     @endif
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="site-footer__widget footer-newsletter">
-                            <h5 class="footer-newsletter__title">Socials</h5>
-                            <div class="footer-newsletter__text footer-newsletter__text--social">Follow us on social
-                                networks</div>
-                            <ul class="footer-newsletter__social-links">
-                                <li class="footer-newsletter__social-link footer-newsletter__social-link--phone">
-                                    <a href="tel:{{$company->phone}}" target="_blank" class="bg-primary" aria-label="Call us"
-                                        data-contact-type="tel">
-                                        <i class="fas fa-phone"></i>
-                                    </a>
-                                </li>
-                                <li class="footer-newsletter__social-link footer-newsletter__social-link--phone">
-                                    <a href="mailto:{{$company->email}}" target="_blank" class="bg-secondary" aria-label="Email us">
-                                        <i class="fas fa-envelope"></i>
-                                    </a>
-                                </li>
-                                @foreach($social ?? [] as $item => $data)
-                                @if(($link = $data->link ?? false) && $link != '#')
-                                <li class="footer-newsletter__social-link footer-newsletter__social-link--{{ $item }}">
-                                    <a href="{{ url($link ?? '#') }}" target="_blank" aria-label="{{ ucfirst($item) }}">
-                                        @switch($item)
-                                        @case('facebook')
-                                        <i class="fab fa-facebook-f"></i>
-                                        @break
-                                        @case('twitter')
-                                        <i class="fab fa-twitter"></i>
-                                        @break
-                                        @case('instagram')
-                                        <i class="fab fa-instagram"></i>
-                                        @break
-                                        @case('youtube')
-                                        <i class="fab fa-youtube"></i>
-                                        @break
-                                        @case('pinterest')
-                                        <i class="fab fa-pinterest"></i>
-                                        @break
-                                        @case('tiktok')
-                                        <i class="fab fa-tiktok"></i>
-                                        @break
-                                        @default
-                                        <i class="fab fa-{{ $item }}"></i>
-                                        @endswitch
-                                    </a>
-                                </li>
-                                @endif
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
+                    @if (filled($footerWhatsapp))<a class="modern-footer__contact-button modern-footer__contact-button--outline" href="https://wa.me/{{ $footerWhatsapp }}" target="_blank" rel="noopener noreferrer">WhatsApp @include('partials.footer-icon', ['icon' => 'arrow'])</a>@endif
                 </div>
             </div>
-            <div class="site-footer__bottom">
-                <div class="site-footer__copyright">
-                    &copy; {{ $company->name ?? '' }}
+        @endif
+
+        <div class="modern-footer__grid {{ $menuItems->isEmpty() ? 'modern-footer__grid--compact' : '' }}">
+            <div class="modern-footer__brand">
+                <a class="modern-footer__logo" href="{{ url('/') }}" wire:navigate.hover aria-label="{{ $footerName }} home">
+                    @if (filled($logo->desktop ?? null))<img src="{{ asset($logo->desktop) }}" alt="{{ $footerName }}" width="200" height="48" loading="lazy" decoding="async">@else<span>{{ $footerName }}</span>@endif
+                </a>
+                <p class="modern-footer__about">{{ $company->tagline ?? '' }}</p>
+                <div class="modern-footer__socials" aria-label="Follow {{ $footerName }}">
+                    @foreach ($social ?? [] as $platform => $socialData)
+                        @if (filled($socialData->link ?? null) && $socialData->link !== '#')
+                            <a href="{{ url($socialData->link) }}" aria-label="{{ ucfirst($platform) }}" target="_blank" rel="noopener noreferrer"><i class="fab fa-{{ $platform === 'facebook' ? 'facebook-f' : ($platform === 'twitter' ? 'twitter' : $platform) }}" aria-hidden="true"></i></a>
+                        @endif
+                    @endforeach
+                    @if (filled($footerEmail))<a href="mailto:{{ $footerEmail }}" aria-label="Email {{ $footerName }}">@include('partials.footer-icon', ['icon' => 'mail'])</a>@endif
+                    @if (filled($footerPhone))<a href="tel:{{ $footerPhone }}" aria-label="Call {{ $footerName }}">@include('partials.footer-icon', ['icon' => 'phone'])</a>@endif
                 </div>
-                @if(($name = $company->dev_name??'Hotash Tech') != '#' and ($link =
-                $company->dev_link??'https://hotash.tech') != '#')
-                <div class="site-footer__payments">
-                    Developed By <a href="{{$company->dev_link??'https://hotash.tech'}}"
-                        class="text-danger">{{$company->dev_name??'Hotash Tech'}}</a>
-                </div>
-                @else
-                <div class="site-footer__payments">
-                    <img src="{{ asset('payments.png') }}" style="height: 55px;" />
-                </div>
-                @endif
             </div>
+
+            <nav class="modern-footer__navigation" aria-label="Explore the store">
+                <h3>Explore</h3>
+                <ul>
+                    <li><a href="{{ route('products.index') }}" wire:navigate.hover>Shop all products</a></li>
+                    <li><a href="{{ route('categories') }}" wire:navigate.hover>Categories</a></li>
+                    <li><a href="{{ route('brands') }}" wire:navigate.hover>Brands</a></li>
+                    <li><a href="{{ route('cart') }}" wire:navigate.hover>Your cart</a></li>
+                    @if ($show_option->track_order ?? false)<li><a href="{{ route('track-order') }}" wire:navigate.hover>Track your order</a></li>@endif
+                </ul>
+            </nav>
+
+            @if ($menuItems->isNotEmpty())
+                <nav class="modern-footer__navigation" aria-label="Store information links">
+                    <h3>Helpful links</h3>
+                    <ul>
+                        @foreach ($menuItems as $item)
+                            @php
+                                $isExternal = \Illuminate\Support\Str::startsWith($item->href, ['http://', 'https://', 'mailto:', 'tel:', '#']);
+                            @endphp
+                            <li><a href="{{ $isExternal ? $item->href : url($item->href) }}" @unless ($isExternal) wire:navigate.hover @endunless>{{ $item->name }}</a></li>
+                        @endforeach
+                    </ul>
+                </nav>
+            @endif
+
+            <div class="modern-footer__contact">
+                <h3>Stay in touch</h3>
+                <ul>
+                    @if (filled($footerPhone))<li>@include('partials.footer-icon', ['icon' => 'phone'])<a href="tel:{{ $footerPhone }}">{{ $footerPhone }}</a></li>@endif
+                    @if (filled($footerEmail))<li>@include('partials.footer-icon', ['icon' => 'mail'])<a href="mailto:{{ $footerEmail }}">{{ $footerEmail }}</a></li>@endif
+                    @if (filled($company->address ?? null))<li>@include('partials.footer-icon', ['icon' => 'pin'])<address>{{ $company->address }}</address></li>@endif
+                    @if (filled($company->office_time ?? null))<li>@include('partials.footer-icon', ['icon' => 'clock'])<span>{{ $company->office_time }}</span></li>@endif
+                </ul>
+            </div>
+        </div>
+
+        <div class="modern-footer__bottom">
+            <p>&copy; {{ date('Y') }} {{ $footerName }}. All rights reserved.</p>
+            @if (filled($company->dev_name ?? null) && $company->dev_name !== '#' && filled($company->dev_link ?? null) && $company->dev_link !== '#')<p>Developed by <a href="{{ $company->dev_link }}" target="_blank" rel="noopener noreferrer">{{ $company->dev_name }}</a></p>@endif
+            <a class="modern-footer__top" href="#store-top">Back to top @include('partials.footer-icon', ['icon' => 'up'])</a>
         </div>
     </div>
 </footer>
