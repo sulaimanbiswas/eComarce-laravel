@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'brand_defaults' => ['primary' => '#204017', 'secondary' => '#10b981', 'accent' => '#f59e0b'],
+    'brand_presets' => [
+        'ocean' => ['name' => 'Ocean Blue', 'primary' => '#2563eb', 'secondary' => '#3b82f6', 'accent' => '#06b6d4'],
+        'emerald' => ['name' => 'Emerald Fresh', 'primary' => '#059669', 'secondary' => '#10b981', 'accent' => '#f59e0b'],
+        'purple' => ['name' => 'Royal Purple', 'primary' => '#7c3aed', 'secondary' => '#8b5cf6', 'accent' => '#ec4899'],
+        'sunset' => ['name' => 'Sunset Warmth', 'primary' => '#ea580c', 'secondary' => '#f97316', 'accent' => '#eab308'],
+        'crimson' => ['name' => 'Crimson Bold', 'primary' => '#dc2626', 'secondary' => '#ef4444', 'accent' => '#f59e0b'],
+        'slate' => ['name' => 'Slate Minimal', 'primary' => '#334155', 'secondary' => '#475569', 'accent' => '#0ea5e9'],
+        'indigo' => ['name' => 'Indigo Night', 'primary' => '#4f46e5', 'secondary' => '#6366f1', 'accent' => '#14b8a6'],
+        'rose' => ['name' => 'Rose Elegance', 'primary' => '#e11d48', 'secondary' => '#f43f5e', 'accent' => '#a855f7'],
+        'teal' => ['name' => 'Teal Commerce', 'primary' => '#0d9488', 'secondary' => '#14b8a6', 'accent' => '#f97316'],
+        'amber' => ['name' => 'Amber Luxe', 'primary' => '#d97706', 'secondary' => '#f59e0b', 'accent' => '#7c3aed'],
+        'navy' => ['name' => 'Navy Trust', 'primary' => '#1e3a5f', 'secondary' => '#2563eb', 'accent' => '#10b981'],
+        'coral' => ['name' => 'Coral Vibrant', 'primary' => '#f43f5e', 'secondary' => '#fb7185', 'accent' => '#06b6d4'],
+    ],
     'header_variants' => [
         'signature' => ['name' => 'Signature', 'description' => 'Balanced storefront with a wide search and category bar.'],
         'studio' => ['name' => 'Studio', 'description' => 'Centered brand, rounded search and spacious navigation.'],

@@ -875,6 +875,7 @@
     @include('partials.header.styles')
     @include('partials.footer-styles')
     @include('partials.responsive-styles')
+    @include('partials.products.savings-styles')
 </head>
 
 <body id="store-top" class="header-fixed" style="margin: 0; padding: 0;">

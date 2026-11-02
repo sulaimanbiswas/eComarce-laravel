@@ -1,9 +1,16 @@
+@php
+    $footerBrandPalette = setting('brand_palette');
+    $footerPalette = app(\App\Services\BrandPalette::class)->footerColors(
+        data_get($footerBrandPalette, 'primary') ?? $color->header->background_color ?? '#1c4435',
+        data_get($footerBrandPalette, 'accent') ?? $color->badge->background_color ?? '#d6992c',
+    );
+@endphp
 <style>
     .modern-footer {
-        --footer-bg: {{ $color->footer->background_color ?? '#153b2f' }};
-        --footer-text: {{ $color->footer->text_color ?? '#f3f7f3' }};
-        --footer-hover: {{ $color->footer->text_hover ?? '#e4bd73' }};
-        padding: 0; background: var(--footer-bg); color: var(--footer-text);
+        --footer-bg: {{ $footerPalette['background_color'] }};
+        --footer-text: {{ $footerPalette['text_color'] }};
+        --footer-hover: {{ $footerPalette['text_hover'] }};
+        padding: 0; background: var(--footer-bg); color: var(--footer-text); border-top: 3px solid var(--footer-hover);
     }
     .modern-footer *, .modern-footer *::before, .modern-footer *::after { box-sizing: border-box; }
     .modern-footer__container { max-width: 1536px; margin: 0 auto; padding: 0 clamp(20px, 3vw, 48px); }

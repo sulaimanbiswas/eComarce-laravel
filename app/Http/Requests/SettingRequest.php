@@ -10,6 +10,9 @@ class SettingRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'brand_palette.*.required' => 'Choose a color for each part of your brand palette.',
+            'brand_palette.*.regex' => 'Enter a valid hex color, such as #2563eb.',
+            'brand_palette.*.string' => 'Each brand color must be a hex color.',
             'logo.hero_banner.image' => 'Please choose a valid banner image.',
             'logo.hero_banner.max' => 'The hero banner must be smaller than 5 MB.',
             'company.hero_banner_link.regex' => 'Use a link starting with /, https://, or http://.',
@@ -119,15 +122,12 @@ class SettingRequest extends FormRequest
         }
 
         if ($this->get('tab') == 'color') {
-            $rules = [];
-            foreach (['topbar', 'header', 'search', 'navbar', 'category_menu', 'section', 'badge', 'footer', 'primary', 'add_to_cart', 'order_now'] as $key) {
-                $rules['color.'.$key] = 'required|array';
-                foreach (['background_color', 'background_hover', 'text_color', 'text_hover'] as $color) {
-                    $rules['color.'.$key.'.'.$color] = ['required', 'regex:/^#([a-f0-9]{6}|[a-f0-9]{3})$/i'];
-                }
-            }
-
-            return $rules;
+            return [
+                'brand_palette' => ['required', 'array:primary,secondary,accent'],
+                'brand_palette.primary' => ['required', 'string', 'regex:/^#([a-f0-9]{6}|[a-f0-9]{3})$/i'],
+                'brand_palette.secondary' => ['required', 'string', 'regex:/^#([a-f0-9]{6}|[a-f0-9]{3})$/i'],
+                'brand_palette.accent' => ['required', 'string', 'regex:/^#([a-f0-9]{6}|[a-f0-9]{3})$/i'],
+            ];
         }
 
         if (in_array($this->get('tab'), ['categories', 'brands'])) {

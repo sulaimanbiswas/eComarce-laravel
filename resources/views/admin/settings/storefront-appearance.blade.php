@@ -23,7 +23,7 @@
                 <x-error :field="'company.'.$part.'_variant'" />
             </fieldset>
         @endforeach
-        <p class="text-muted mb-0"><small>Change colors in Color Settings → Header, Navbar, Search and Footer. All designs adapt to mobile and tablet screens.</small></p>
+        <p class="text-muted mb-0"><small>Choose a coordinated palette in Color Settings → Brand Colors. All designs adapt to mobile and tablet screens.</small></p>
     </div>
 </fieldset>
 <style>

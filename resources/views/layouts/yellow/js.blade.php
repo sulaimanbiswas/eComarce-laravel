@@ -16,7 +16,21 @@
             header.style.setProperty('--storefront-header-main-height', (main?.offsetHeight ?? 0) + 'px');
             header.style.setProperty('--storefront-header-top-gap', getComputedStyle(header).paddingTop);
             header.style.setProperty('--storefront-header-bottom', header.getBoundingClientRect().bottom + 'px');
+            const morePanel = header.querySelector('.storefront-header__more[open] > .storefront-header__more-panel');
+            if (morePanel) {
+                const viewportBottom = window.visualViewport
+                    ? window.visualViewport.offsetTop + window.visualViewport.height
+                    : window.innerHeight;
+                const availableHeight = Math.max(0, Math.floor(viewportBottom - morePanel.getBoundingClientRect().top - 16));
+                morePanel.style.setProperty('--store-more-available-height', availableHeight + 'px');
+            }
         };
+        document.addEventListener('toggle', function(event) {
+            if (event.target.matches('.storefront-header__more[open]')) {
+                updateStorefrontHeaderLayout();
+            }
+        }, true);
+        window.visualViewport?.addEventListener('resize', updateStorefrontHeaderLayout);
         const setHeaderScrollState = function(header, compact) {
             const state = compact ? 'compact' : 'expanded';
             if (header.dataset.scrollState !== state) {

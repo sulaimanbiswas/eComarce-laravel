@@ -167,7 +167,7 @@
         </div>
         <div class="form-group"><label for="footer-support-heading">Support heading</label><input class="form-control" id="footer-support-heading" name="company[footer_support_heading]" maxlength="120" value="{{ old('company.footer_support_heading', $company->footer_support_heading ?? '') }}" placeholder="Let's make shopping simple."><x-error field="company.footer_support_heading" /></div>
         <div class="form-group"><label for="footer-support-text">Support description</label><input class="form-control" id="footer-support-text" name="company[footer_support_text]" maxlength="255" value="{{ old('company.footer_support_text', $company->footer_support_text ?? '') }}" placeholder="Questions about a product, your order or delivery? Get in touch."><x-error field="company.footer_support_text" /></div>
-        <small class="text-muted">The footer uses your company logo, contact details and social links. Colors are in Color Settings → Footer; helpful links are managed in the Quick Links menu.</small>
+        <small class="text-muted">The footer uses your company logo, contact details and social links. Choose its palette in Color Settings → Brand Colors; helpful links are managed in the Quick Links menu.</small>
     </div>
 </div>
 

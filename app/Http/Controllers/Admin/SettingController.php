@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SettingRequest;
 use App\Models\Setting;
 use App\Repositories\SettingRepository;
+use App\Services\BrandPalette;
 use App\Traits\ImageUploader;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +29,29 @@ class SettingController extends Controller
         }
 
         $data = $request->validated();
+
+        if ($request->get('tab') === 'color') {
+            $brandPalette = app(BrandPalette::class);
+            $data['brand_palette'] = array_map($brandPalette->normalize(...), $data['brand_palette']);
+            $data['color'] = $brandPalette->colors($data['brand_palette']);
+            $primary = $data['brand_palette']['primary'];
+            $accent = $data['brand_palette']['accent'];
+            $data['section_heading'] = array_replace((array) setting('section_heading'), [
+                'title_color' => $brandPalette->mix($primary, '#000000', 0.6),
+                'link_color' => $brandPalette->mix($primary, '#000000', 0.6),
+                'link_hover' => $brandPalette->mix($accent, '#000000', 0.6),
+                'accent_color' => $accent,
+                'link_background' => '#ffffff',
+                'link_border' => $brandPalette->mix($primary, '#ffffff', 0.8),
+            ]);
+            $data['services'] = array_replace((array) setting('services'), [
+                'background_color' => $brandPalette->mix($primary, '#ffffff', 0.96),
+                'card_color' => '#ffffff',
+                'text_color' => $brandPalette->mix($primary, '#000000', 0.6),
+                'icon_color' => $brandPalette->mix($accent, '#000000', 0.6),
+                'border_color' => $brandPalette->mix($primary, '#ffffff', 0.85),
+            ]);
+        }
 
         if ($request->get('tab') === 'delivery') {
             $defaultIndex = isset($data['default_delivery_area']) ? (int) $data['default_delivery_area'] : -1;
